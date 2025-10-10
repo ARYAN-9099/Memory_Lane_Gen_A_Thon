@@ -25,6 +25,8 @@ class Item:
     sentiment_score: float
     thumbnail: str | None
     created_at: datetime
+    processed: bool
+    processing_error: str | None
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "Item":
@@ -42,6 +44,8 @@ class Item:
             sentiment_score=row["sentiment_score"],
             thumbnail=row["thumbnail"],
             created_at=datetime.fromisoformat(row["created_at"]),
+            processed=bool(row["processed"]) if "processed" in row.keys() else True,
+            processing_error=row["processing_error"] if "processing_error" in row.keys() else None,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -59,6 +63,8 @@ class Item:
             "sentimentScore": self.sentiment_score,
             "thumbnail": self.thumbnail,
             "createdAt": self.created_at.isoformat(),
+            "processed": self.processed,
+            "processingError": self.processing_error,
         }
 
 
@@ -86,7 +92,9 @@ class Database:
                     emotion TEXT,
                     sentiment_score REAL,
                     thumbnail TEXT,
-                    created_at TEXT
+                    created_at TEXT,
+                    processed INTEGER DEFAULT 1,
+                    processing_error TEXT
                 )
                 """
             )
@@ -116,6 +124,15 @@ class Database:
                 conn.execute("ALTER TABLE items ADD COLUMN user_id INTEGER")
             except Exception:
                 pass
+            # Migration: ensure processed columns exist
+            try:
+                conn.execute("ALTER TABLE items ADD COLUMN processed INTEGER DEFAULT 1")
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE items ADD COLUMN processing_error TEXT")
+            except Exception:
+                pass
             conn.commit()
 
     @contextmanager
@@ -140,6 +157,8 @@ class Database:
         emotion: str,
         sentiment_score: float,
         thumbnail: str | None,
+        processed: bool = True,
+        processing_error: str | None = None,
     ) -> Item:
         created_at = datetime.utcnow().isoformat()
         payload = (
@@ -155,6 +174,8 @@ class Database:
             sentiment_score,
             thumbnail,
             created_at,
+            1 if processed else 0,
+            processing_error,
         )
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -162,8 +183,9 @@ class Database:
                 """
                 INSERT INTO items (
                     user_id, url, title, source, content_type, content, summary,
-                    keywords, emotion, sentiment_score, thumbnail, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    keywords, emotion, sentiment_score, thumbnail, created_at,
+                    processed, processing_error
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 payload,
             )
@@ -174,6 +196,35 @@ class Database:
             cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
             row = cursor.fetchone()
             return Item.from_row(row)
+
+    def update_item_enrichment(
+        self,
+        user_id: int,
+        item_id: int,
+        summary: str,
+        keywords: list[str],
+        emotion: str,
+        sentiment_score: float,
+        processing_error: str | None = None,
+    ) -> Item | None:
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                UPDATE items
+                SET summary = ?, keywords = ?, emotion = ?, sentiment_score = ?,
+                    processed = 1, processing_error = ?
+                WHERE id = ? AND user_id = ?
+                """,
+                (summary, json.dumps(keywords), emotion, sentiment_score, processing_error, item_id, user_id),
+            )
+            # Reset tags
+            cur.execute("DELETE FROM tags WHERE item_id = ?", (item_id,))
+            for tag in keywords:
+                cur.execute("INSERT INTO tags (item_id, tag) VALUES (?, ?)", (item_id, tag))
+            conn.commit()
+            row = cur.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
+            return Item.from_row(row) if row else None
 
     def search_items(
         self,
