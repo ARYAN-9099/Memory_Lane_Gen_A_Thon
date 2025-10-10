@@ -10,11 +10,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .ai_pipeline import AIPipeline
 from .database import Database
 from .extractor import extract_text
+from .worker import EnrichmentWorker
 
 
 def register_routes(app: Flask, database: Database) -> None:
     api = Blueprint("memory_lane", __name__, url_prefix="/api")
     pipeline = AIPipeline()
+    worker = EnrichmentWorker(max_workers=2)
 
     def _get_auth_user() -> dict | None:
         # 1) Token from Authorization header for extension/API
@@ -61,7 +63,8 @@ def register_routes(app: Flask, database: Database) -> None:
                 if not title and server_title:
                     title = server_title
 
-        processed = pipeline.process(f"{title}. {content}")
+        # Quick minimal fields; leave enrichment to background if content is large
+        quick = pipeline.process((content[:600] + "...") if len(content) > 600 else content)
         item = database.insert_item(
             user_id=int(user["id"]),
             url=url,
@@ -69,13 +72,46 @@ def register_routes(app: Flask, database: Database) -> None:
             source=source,
             content_type=content_type,
             content=content,
-            summary=processed.summary,
-            keywords=processed.keywords,
-            emotion=processed.emotion,
-            sentiment_score=processed.sentiment_score,
+            summary=quick.summary,
+            keywords=quick.keywords,
+            emotion=quick.emotion,
+            sentiment_score=quick.sentiment_score,
             thumbnail=thumbnail,
+            processed=False,
         )
-        return jsonify({"item": item.to_dict(), "extracted": bool(content and content != snippet)}), 201
+        item_id = item.id
+
+        def do_enrich(item_id: int, user_id: int, text: str, title_for_prompt: str):
+            try:
+                enriched = pipeline.process(f"{title_for_prompt}. {text}")
+                database.update_item_enrichment(
+                    user_id=user_id,
+                    item_id=item_id,
+                    summary=enriched.summary,
+                    keywords=enriched.keywords,
+                    emotion=enriched.emotion,
+                    sentiment_score=enriched.sentiment_score,
+                    processing_error=None,
+                )
+            except Exception as e:
+                database.update_item_enrichment(
+                    user_id=user_id,
+                    item_id=item_id,
+                    summary=quick.summary,
+                    keywords=quick.keywords,
+                    emotion=quick.emotion,
+                    sentiment_score=quick.sentiment_score,
+                    processing_error=str(e),
+                )
+
+        # Enqueue background enrichment work
+        worker.submit(do_enrich, item_id, int(user["id"]), content, title)
+
+        return jsonify({
+            "item": item.to_dict(),
+            "extracted": bool(content and content != snippet),
+            "queued": True
+        }), 201
 
     @api.route("/search", methods=["GET"])
     def search_items():

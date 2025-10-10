@@ -10,3 +10,4 @@ memory_lane.db
 .github/copilot-instructions.md
 .vscode/tasks.json
 .env
+test.py
