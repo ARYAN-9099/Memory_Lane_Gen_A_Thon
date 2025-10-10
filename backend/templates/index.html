@@ -1,84 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Memory Lane Snapshot Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memory Lane Snapshot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
 </head>
+
 <body>
-  <header class="app-header">
-    <div>
-      <h1>Memory Lane Snapshot</h1>
-      <p class="tagline">Your captured content, ready to rediscover.</p>
-    </div>
-    <div class="status" id="apiStatus">Checking API…</div>
-  </header>
-
-  <main>
-    <section class="search-panel">
-      <div class="field">
-        <label for="searchInput">Keyword search</label>
-        <input id="searchInput" type="text" placeholder="Try 'AI summary' or 'helpful'">
-      </div>
-      <div class="field">
-        <label for="emotionSelect">Emotion</label>
-        <select id="emotionSelect">
-          <option value="">Any emotion</option>
-          <option value="excited">Excited</option>
-          <option value="happy">Happy</option>
-          <option value="neutral">Neutral</option>
-          <option value="thoughtful">Thoughtful</option>
-          <option value="reflective">Reflective</option>
-        </select>
-      </div>
-      <button id="searchBtn" class="primary">Search</button>
-      <button id="resetBtn" class="ghost">Reset</button>
+    <section id="sidebar">
+        <a href="#" class="brand"><span>MemoryLane.ai</span></a>
+        <ul class="side-menu">
+            <li>
+                <a class="active" href="/dash">
+                    <i class="fa-solid fa-paperclip icon"></i>
+                    <span class="label">Dashboard</span>
+                </a>
+            </li>
+            <li class="divider" data-text="main">Main</li>
+            <li>
+                <a href="/analysis">
+                    <i class="fa-solid fa-chart-simple icon"></i>
+                    <span class="label">Analysis</span>
+                </a>
+            </li>
+            <li>
+                <a href="/inventory">
+                    <i class="fa-solid fa-boxes-stacked icon"></i>
+                    <span class="label">Inventory</span>
+                </a>
+            </li>
+            <li>
+                <a href="/charts">
+                    <i class="fa-solid fa-chart-pie icon"></i>
+                    <span class="label">Charts</span>
+                </a>
+            </li>
+            <li>
+                <a href="/table">
+                    <i class="fa-solid fa-table icon"></i>
+                    <span class="label">Tables</span>
+                </a>
+            </li>
+            <li class="divider" data-text="OTHER">Other</li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-comment icon"></i>
+                    <span class="label">Suggestions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-pen-to-square icon"></i>
+                    <span class="label">Feedback</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-phone-volume icon"></i>
+                    <span class="label">Contact Us</span>
+                </a>
+            </li>
+        </ul>
+        <div class="social-links">
+            <a href="#"><i class="fa-brands fa-square-facebook"></i></a>
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+            <a href="#"><i class="fa-brands fa-discord"></i></a>
+        </div>
     </section>
 
-    <section class="grid">
-      <div class="card" id="timelineCard">
-        <div class="card-header">
-          <h2>Recent Captures</h2>
-          <button id="refreshTimeline" class="ghost">Refresh</button>
-        </div>
-        <ul id="timelineList" class="item-list"></ul>
-      </div>
+    <section id="content">
+        <nav>
+            <i class="fa-solid fa-bars toggle-sidebar"></i>
+            <div class="nav-main-group">
+                <div>
+                    <p class="tagline">Your captured content, ready to rediscover.</p>
+                </div>
+                <div class="status" id="apiStatus">Checking API…</div>
+            </div>
+            <i id="toggle-theme" class="fa-solid fa-sun icon" title="Toggle theme"></i>
+            <a href="#" class="nav-link">
+                <i class="fa-solid fa-bell icon"></i>
+                <span class="badge">5</span>
+            </a>
+        </nav>
+        <main>
+            <div id="dash-content">
 
-      <div class="card">
-        <div class="card-header">
-          <h2>Search Results</h2>
-          <span id="resultsCount" class="muted"></span>
-        </div>
-        <ul id="resultsList" class="item-list"></ul>
-      </div>
+                <section class="search-container card">
+                    <div class="field">
+                        <label for="searchInput">Keyword search</label>
+                        <input id="searchInput" type="text" placeholder="Try 'AI summary' or 'helpful'">
+                    </div>
+                    <div class="field">
+                        <label for="emotionSelect">Emotion</label>
+                        <select id="emotionSelect">
+                            <option value="">Any emotion</option>
+                            <option value="excited">Excited</option>
+                            <option value="happy">Happy</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="thoughtful">Thoughtful</option>
+                            <option value="reflective">Reflective</option>
+                        </select>
+                    </div>
+                    <button id="searchBtn" class="primary">Search</button>
+                    <button id="resetBtn" class="ghost">Reset</button>
+                </section>
 
-      <div class="card insights-card">
-        <div class="card-header">
-          <h2>Library Insights</h2>
-        </div>
-        <div class="insights">
-          <div>
-            <span class="metric-label">Total items</span>
-            <span id="totalItems" class="metric-value">—</span>
-          </div>
-          <div>
-            <span class="metric-label">Top tags</span>
-            <ul id="topTags"></ul>
-          </div>
-        </div>
-        <div class="charts">
-          <canvas id="contentTypeChart" width="300" height="200"></canvas>
-          <canvas id="emotionChart" width="300" height="200"></canvas>
-        </div>
-      </div>
+
+                <section class="slider-section">
+                    <div class="slider-header">
+                        <h2>Recent Captures</h2>
+                        <div class="slider-nav">
+                            <button class="slider-btn prev" id="timeline-prev" title="Previous Capture"><i
+                                    class="fa-solid fa-chevron-left"></i></button>
+                            <button class="slider-btn next" id="timeline-next" title="Next Capture"><i
+                                    class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="slider-window">
+                        <div class="slider-track" id="timelineList">
+                        </div>
+                    </div>
+                </section>
+
+
+                <section class="slider-section">
+                    <div class="slider-header">
+                        <h2>Search Results <span id="resultsCount" class="muted"></span></h2>
+                        <div class="slider-nav">
+                            <button class="slider-btn prev" id="results-prev" title="Previous Results"><i
+                                    class="fa-solid fa-chevron-left"></i></button>
+                            <button class="slider-btn next" id="results-next" title="Next Results"><i
+                                    class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="slider-window">
+                        <div class="slider-track" id="resultsList">
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
     </section>
-  </main>
-
-  <footer>
-    <small>Extension captures sync live. Keep the API running on http://localhost:5000.</small>
-  </footer>
+    <footer>
+        <small>Extension captures sync live. Keep the API running on http://localhost:5000.</small>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </body>
+
 </html>
