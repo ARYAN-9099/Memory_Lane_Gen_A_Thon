@@ -6,6 +6,38 @@ from dataclasses import dataclass
 from typing import Any
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import os
+import requests
+import google.generativeai as genai
+from dotenv import load_dotenv
+load_dotenv()  # take environment variables from .env file
+
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+#section to configure gemini api
+
+genai.configure(api_key=gemini_api_key)
+generation_config = {
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "top_k": 1,
+        "max_output_tokens": 8192,
+    }
+
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+]
+
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    generation_config=generation_config,
+    safety_settings=safety_settings,
+)
+
+
 
 
 _SENTENCE_PATTERN = re.compile(r"(?<=[.!?]) +")
@@ -100,13 +132,17 @@ class AIPipeline:
         self._sentiment = SentimentIntensityAnalyzer()
 
     def summarise(self, text: str) -> str:
-        sentences = _SENTENCE_PATTERN.split(text.strip())
-        if not sentences:
-            return text[:280]
-        if len(sentences) == 1:
-            return sentences[0][:280]
-        summary = " ".join(sentences[:2])
-        return summary[:400]
+        
+        try:
+            response = model.generate_content(
+                f"Summarize the following text in one or two sentences. Output only the summary:\n\n{text}"
+            )
+            summary = response.text.strip() if response.text else ""
+            return summary or (text[:150] + "..." if len(text) > 150 else text)
+
+        except Exception as e:
+            print(f"Error occurred while summarizing text: {e}")
+            return text[:147] + "..." if len(text) > 150 else text
 
     def extract_keywords(self, text: str, limit: int = 8) -> list[str]:
         words = [w.lower() for w in _WORD_PATTERN.findall(text)]
