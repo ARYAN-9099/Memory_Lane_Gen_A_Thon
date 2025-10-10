@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Memory Lane Snapshot</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Memory Lane</h1>
+    <button id="captureBtn" title="Capture current tab">Capture</button>
+  </header>
+
+  <section class="search">
+    <input id="searchInput" type="text" placeholder="Search your memories" />
+    <select id="emotionFilter">
+      <option value="any">Any emotion</option>
+      <option value="excited">Excited</option>
+      <option value="happy">Happy</option>
+      <option value="neutral">Neutral</option>
+      <option value="thoughtful">Thoughtful</option>
+      <option value="reflective">Reflective</option>
+    </select>
+    <button id="searchBtn">Search</button>
+  </section>
+
+  <section>
+    <h2>Recent</h2>
+    <ul id="timelineList"></ul>
+  </section>
+
+  <section>
+    <h2>Results</h2>
+    <ul id="resultsList"></ul>
+  </section>
+
+  <footer>
+    <small>Keep the Flask API running at http://localhost:5000</small>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

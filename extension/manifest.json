@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Memory Lane Snapshot",
+  "version": "0.1.0",
+  "description": "Capture and organize inspiring content with AI-powered tagging and search.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_title": "Memory Lane Snapshot",
+    "default_popup": "popup.html"
+  }
+}

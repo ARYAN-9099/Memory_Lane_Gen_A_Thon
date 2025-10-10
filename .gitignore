@@ -1,0 +1,11 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/memory_lane.db
+
+# Chrome extension build artifacts
+extension/dist/
+memory_lane.db
+.github/copilot-instructions.md
+.vscode/tasks.json

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memory Lane Snapshot Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>Memory Lane Snapshot</h1>
+      <p class="tagline">Your captured content, ready to rediscover.</p>
+    </div>
+    <div class="status" id="apiStatus">Checking API…</div>
+  </header>
+
+  <main>
+    <section class="search-panel">
+      <div class="field">
+        <label for="searchInput">Keyword search</label>
+        <input id="searchInput" type="text" placeholder="Try 'AI summary' or 'helpful'">
+      </div>
+      <div class="field">
+        <label for="emotionSelect">Emotion</label>
+        <select id="emotionSelect">
+          <option value="">Any emotion</option>
+          <option value="excited">Excited</option>
+          <option value="happy">Happy</option>
+          <option value="neutral">Neutral</option>
+          <option value="thoughtful">Thoughtful</option>
+          <option value="reflective">Reflective</option>
+        </select>
+      </div>
+      <button id="searchBtn" class="primary">Search</button>
+      <button id="resetBtn" class="ghost">Reset</button>
+    </section>
+
+    <section class="grid">
+      <div class="card" id="timelineCard">
+        <div class="card-header">
+          <h2>Recent Captures</h2>
+          <button id="refreshTimeline" class="ghost">Refresh</button>
+        </div>
+        <ul id="timelineList" class="item-list"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Search Results</h2>
+          <span id="resultsCount" class="muted"></span>
+        </div>
+        <ul id="resultsList" class="item-list"></ul>
+      </div>
+
+      <div class="card insights-card">
+        <div class="card-header">
+          <h2>Library Insights</h2>
+        </div>
+        <div class="insights">
+          <div>
+            <span class="metric-label">Total items</span>
+            <span id="totalItems" class="metric-value">—</span>
+          </div>
+          <div>
+            <span class="metric-label">Top tags</span>
+            <ul id="topTags"></ul>
+          </div>
+        </div>
+        <div class="charts">
+          <canvas id="contentTypeChart" width="300" height="200"></canvas>
+          <canvas id="emotionChart" width="300" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>Extension captures sync live. Keep the API running on http://localhost:5000.</small>
+  </footer>
+</body>
+</html>
