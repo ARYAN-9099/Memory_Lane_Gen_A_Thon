@@ -64,6 +64,16 @@ async function searchLibrary(query, emotion) {
   return response.json();
 }
 
+// Built-in exclusion list (defaults). Users can add/remove entries via the popup.
+const BUILTIN_EXCLUSIONS = [
+  'localhost',
+  '127.0.0.1',
+  'github.com',
+  'mail.google.com',
+  'accounts.google.com',
+  'chrome.google.com',
+];
+
 // Deduplicate metadata-only auto captures per URL for a short TTL
 const autoCaptureCache = new Map(); // url -> timestamp(ms)
 const AUTO_TTL_MS = 60_000; // 1 minute
@@ -73,6 +83,18 @@ function shouldAutoCapture(url) {
   if (now - last < AUTO_TTL_MS) return false;
   autoCaptureCache.set(url, now);
   return true;
+}
+
+// Exclusion helpers
+async function getExclusions() {
+  const res = await chrome.storage.local.get(['memoryLaneExclusions']);
+  const custom = res.memoryLaneExclusions || [];
+  return Array.from(new Set([...BUILTIN_EXCLUSIONS, ...custom]));
+}
+
+async function isExcluded(hostname) {
+  const exclusions = await getExclusions();
+  return exclusions.some(e => e && hostname.includes(e));
 }
 
 async function fetchTimeline(limit = 10) {
@@ -127,6 +149,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 
   try {
+    const hostname = new URL(tab.url).hostname;
+    if (await isExcluded(hostname)) {
+      console.info('Domain excluded, skipping manual capture for', hostname);
+      return;
+    }
     const item = await captureCurrentTab(tab.id);
     console.info('Captured item:', item.title);
   } catch (error) {
@@ -186,26 +213,79 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       allowServerExtract: true,
     };
 
-    postCapture(payload)
-      .then((res) => {
-        // If backend could not extract enough, fallback to client-side full text capture
-        if (!res?.extracted) {
-          if (sender?.tab?.id) {
-            chrome.scripting.executeScript({
-              target: { tabId: sender.tab.id },
-              func: () => document.body ? (document.body.innerText || '') : '',
-            }).then(results => {
-              const text = results?.[0]?.result || '';
-              if (text && text.length > 0) {
-                const retryPayload = { ...payload, content: text, allowServerExtract: false };
-                return postCapture(retryPayload);
-              }
-            }).catch(() => {/* ignore */});
-          }
+    // Check exclusions (async) then run capture flow
+    try {
+      const hostname = (new URL(url)).hostname;
+      isExcluded(hostname).then(excluded => {
+        if (excluded) {
+          sendResponse?.({ skipped: true, excluded: true });
+          return;
         }
-        sendResponse?.({ ok: true, extracted: !!res?.extracted });
-      })
-      .catch(err => sendResponse?.({ error: String(err) }));
+
+        postCapture(payload)
+          .then((res) => {
+            // If backend could not extract enough, fallback to client-side full text capture
+            if (!res?.extracted) {
+              if (sender?.tab?.id) {
+                chrome.scripting.executeScript({
+                  target: { tabId: sender.tab.id },
+                  func: () => document.body ? (document.body.innerText || '') : '',
+                }).then(results => {
+                  const text = results?.[0]?.result || '';
+                  if (text && text.length > 0) {
+                    const retryPayload = { ...payload, content: text, allowServerExtract: false };
+                    return postCapture(retryPayload);
+                  }
+                }).catch(() => {/* ignore */});
+              }
+            }
+            sendResponse?.({ ok: true, extracted: !!res?.extracted });
+          })
+          .catch(err => sendResponse?.({ error: String(err) }));
+      }).catch(() => {
+        // If exclusion check fails, proceed with capture
+        postCapture(payload)
+          .then((res) => {
+            if (!res?.extracted) {
+              if (sender?.tab?.id) {
+                chrome.scripting.executeScript({
+                  target: { tabId: sender.tab.id },
+                  func: () => document.body ? (document.body.innerText || '') : '',
+                }).then(results => {
+                  const text = results?.[0]?.result || '';
+                  if (text && text.length > 0) {
+                    const retryPayload = { ...payload, content: text, allowServerExtract: false };
+                    return postCapture(retryPayload);
+                  }
+                }).catch(() => {/* ignore */});
+              }
+            }
+            sendResponse?.({ ok: true, extracted: !!res?.extracted });
+          })
+          .catch(err => sendResponse?.({ error: String(err) }));
+      });
+    } catch (e) {
+      // ignore URL parse errors and continue with capture
+      postCapture(payload)
+        .then((res) => {
+          if (!res?.extracted) {
+            if (sender?.tab?.id) {
+              chrome.scripting.executeScript({
+                target: { tabId: sender.tab.id },
+                func: () => document.body ? (document.body.innerText || '') : '',
+              }).then(results => {
+                const text = results?.[0]?.result || '';
+                if (text && text.length > 0) {
+                  const retryPayload = { ...payload, content: text, allowServerExtract: false };
+                  return postCapture(retryPayload);
+                }
+              }).catch(() => {/* ignore */});
+            }
+          }
+          sendResponse?.({ ok: true, extracted: !!res?.extracted });
+        })
+        .catch(err => sendResponse?.({ error: String(err) }));
+    }
     return true;
   }
 });

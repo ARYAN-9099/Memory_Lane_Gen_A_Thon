@@ -8,6 +8,9 @@ const logoutBtn = document.getElementById('logoutBtn');
 const searchBtn = document.getElementById('searchBtn');
 const searchInput = document.getElementById('searchInput');
 const emotionFilter = document.getElementById('emotionFilter');
+const excludeInput = document.getElementById('excludeInput');
+const addExcludeBtn = document.getElementById('addExcludeBtn');
+const exclusionsList = document.getElementById('exclusionsList');
 
 function renderItems(listElement, items, emptyMessage) {
   listElement.innerHTML = '';
@@ -119,6 +122,53 @@ searchInput.addEventListener('keydown', event => {
 });
 
 refreshTimeline();
+
+// Exclusions UI
+async function loadExclusions() {
+  const res = await chrome.storage.local.get(['memoryLaneExclusions']);
+  const custom = res.memoryLaneExclusions || [];
+  renderExclusions(custom);
+}
+
+function renderExclusions(list) {
+  exclusionsList.innerHTML = '';
+  if (!list.length) {
+    const li = document.createElement('li');
+    li.textContent = 'No custom exclusions';
+    exclusionsList.appendChild(li);
+    return;
+  }
+  list.forEach(domain => {
+    const li = document.createElement('li');
+    li.textContent = domain;
+    const btn = document.createElement('button');
+    btn.textContent = 'Remove';
+    btn.addEventListener('click', async () => {
+      const res = await chrome.storage.local.get(['memoryLaneExclusions']);
+      const cur = res.memoryLaneExclusions || [];
+      const updated = cur.filter(x => x !== domain);
+      await chrome.storage.local.set({ memoryLaneExclusions: updated });
+      loadExclusions();
+    });
+    li.appendChild(btn);
+    exclusionsList.appendChild(li);
+  });
+}
+
+addExcludeBtn.addEventListener('click', async () => {
+  const v = excludeInput.value.trim();
+  if (!v) return;
+  const res = await chrome.storage.local.get(['memoryLaneExclusions']);
+  const cur = res.memoryLaneExclusions || [];
+  if (!cur.includes(v)) {
+    cur.push(v);
+    await chrome.storage.local.set({ memoryLaneExclusions: cur });
+    excludeInput.value = '';
+    loadExclusions();
+  }
+});
+
+loadExclusions();
 
 // Auth helpers
 async function setTokenInBackground(token) {
