@@ -11,3 +11,4 @@ memory_lane.db
 .vscode/tasks.json
 .env
 test.py
+.venv/
