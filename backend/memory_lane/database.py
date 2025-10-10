@@ -226,6 +226,8 @@ class Database:
             row = cur.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
             return Item.from_row(row) if row else None
 
+    # In memory_lane/database.py
+
     def search_items(
         self,
         user_id: int,
@@ -233,29 +235,38 @@ class Database:
         emotion: str | None = None,
         limit: int = 25,
     ) -> list[Item]:
-        sql = "SELECT * FROM items WHERE user_id = ?"
+        """Search items using a proper JOIN on the tags table for efficiency."""
+        
+        # Start with the base query joining items and tags
+        # We use DISTINCT to avoid getting duplicate items if they match multiple tags
+        sql_parts = [
+            "SELECT DISTINCT i.* FROM items i",
+            "LEFT JOIN tags t ON i.id = t.item_id",
+            "WHERE i.user_id = ?"
+        ]
         params: list[Any] = [user_id]
-        clauses: list[str] = []
 
         if query:
-            clauses.append(
-                "(title LIKE ? OR summary LIKE ? OR content LIKE ? OR keywords LIKE ?)"
+            query_lower = query.lower()
+            # The search now includes the properly indexed t.tag column
+            sql_parts.append(
+                "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ?)"
             )
-            like_query = f"%{query}%"
-            params.extend([like_query] * 4)
+            like_query = f"%{query_lower}%"
+            params.extend([like_query, like_query, like_query])
 
         if emotion:
-            clauses.append("emotion = ?")
-            params.append(emotion)
+            emotion_lower = emotion.lower()
+            sql_parts.append("AND LOWER(i.emotion) = ?")
+            params.append(emotion_lower)
 
-        if clauses:
-            sql += " AND " + " AND ".join(clauses)
-
-        sql += " ORDER BY datetime(created_at) DESC LIMIT ?"
+        sql_parts.append("ORDER BY datetime(i.created_at) DESC LIMIT ?")
         params.append(limit)
 
+        final_sql = " ".join(sql_parts)
+
         with self._get_connection() as conn:
-            rows = conn.execute(sql, params).fetchall()
+            rows = conn.execute(final_sql, params).fetchall()
             return [Item.from_row(row) for row in rows]
 
     def get_item(self, user_id: int, item_id: int) -> Item | None:

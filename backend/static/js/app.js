@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const API_BASE = `${window.location.origin}/api`;
 
+  // --- Element Selectors ---
   const apiStatus = document.getElementById('apiStatus');
   const searchInput = document.getElementById('searchInput');
   const emotionSelect = document.getElementById('emotionSelect');
@@ -10,7 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const timelineList = document.getElementById('timelineList');
   const resultsList = document.getElementById('resultsList');
   const resultsCount = document.getElementById('resultsCount');
+  const profile = document.querySelector('nav .profile');
+  const toggleSidebar = document.querySelector('nav .toggle-sidebar');
+  const sidebar = document.getElementById('sidebar');
+  const toggleBtn = document.getElementById("toggle-theme");
+  const html = document.documentElement;
 
+  // --- API Functions ---
   async function fetchJson(path, options) {
     const response = await fetch(`${API_BASE}${path}`, options);
     if (!response.ok) {
@@ -38,10 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }, intervalMs);
   }
 
+  // --- Rendering Functions ---
   function createItemElement(item) {
     const card = document.createElement('div');
     card.className = 'card';
-
     const title = document.createElement('a');
     title.className = 'item-title';
     title.textContent = item.title || 'Untitled';
@@ -50,16 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
       title.target = '_blank';
       title.rel = 'noreferrer';
     }
-
     const meta = document.createElement('div');
     meta.className = 'item-meta';
     const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Unknown';
     meta.textContent = `${item.source || 'web'} • ${item.contentType || 'web'} • ${dateStr}`;
-
     const summary = document.createElement('p');
     summary.className = 'item-summary';
     summary.textContent = item.summary || item.content?.slice(0, 180) || '';
-
     const badges = document.createElement('div');
     badges.className = 'badges';
     if (item.emotion) {
@@ -74,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
       badge.textContent = keyword;
       badges.appendChild(badge);
     });
-
     card.appendChild(title);
     card.appendChild(meta);
     card.appendChild(summary);
@@ -92,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach(item => trackEl.appendChild(createItemElement(item)));
   }
 
+  // --- Data Loading & Search ---
   async function loadTimeline() {
     try {
       const data = await fetchJson('/timeline?limit=15');
@@ -109,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const emotion = emotionSelect.value;
     if (query) params.set('q', query);
     if (emotion) params.set('emotion', emotion);
-
     try {
       const data = await fetchJson(`/search?${params.toString()}`);
       if (resultsCount) resultsCount.textContent = `(${data.results.length} matches)`;
@@ -123,43 +126,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // --- UI Component Functions ---
   function setupSlider(prefix) {
     const track = document.getElementById(`${prefix}List`);
     const nextButton = document.getElementById(`${prefix}-next`);
     const prevButton = document.getElementById(`${prefix}-prev`);
     if (!track || !nextButton || !prevButton) return;
-
     let currentIndex = 0;
     const itemsPerScreen = 3;
     const totalItems = track.children.length;
     const maxIndex = Math.max(0, Math.ceil(totalItems / itemsPerScreen) - 1);
 
     function updateSlider() {
-      const itemWidth = track.firstElementChild ? track.firstElementChild.offsetWidth + 24 : 0; // card width + gap
+      const itemWidth = track.firstElementChild ? track.firstElementChild.offsetWidth + 24 : 0;
       const newTransform = -currentIndex * itemWidth * itemsPerScreen;
       track.style.transform = `translateX(${newTransform}px)`;
-
       prevButton.disabled = currentIndex === 0;
       nextButton.disabled = currentIndex >= maxIndex;
     }
-
     nextButton.addEventListener('click', () => {
       if (currentIndex < maxIndex) {
         currentIndex++;
         updateSlider();
       }
     });
-
     prevButton.addEventListener('click', () => {
       if (currentIndex > 0) {
         currentIndex--;
         updateSlider();
       }
     });
-
-    updateSlider(); // Initial setup
+    updateSlider();
   }
 
+  // --- Initialization and Event Listeners ---
   async function init() {
     try {
       await fetchJson('/health');
@@ -168,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setStatus('API disconnected', 'error');
     }
     startHealthCheck();
-
     loadTimeline();
     performSearch();
   }
@@ -187,9 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  init();
-
-  const profile = document.querySelector('nav .profile');
   if (profile) {
     const imgProfile = profile.querySelector('img');
     const dropdownProfile = profile.querySelector('.profile-link');
@@ -198,24 +194,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  const toggleSidebar = document.querySelector('nav .toggle-sidebar');
-  const sidebar = document.getElementById('sidebar');
   if (toggleSidebar && sidebar) {
-    toggleSidebar.addEventListener('click', () => sidebar.classList.toggle('hide'));
+    const allsideDividers = document.querySelectorAll('li.divider');
+    const selectWrapper = document.querySelector('#emotionSelect'); // Define it once here
+    const footer = document.querySelector('.footer');
+
+    toggleSidebar.addEventListener('click', () => {
+      sidebar.classList.toggle('hide');
+
+      if (sidebar.classList.contains('hide')) {
+        allsideDividers.forEach(item => {
+          item.textContent = '-';
+        });
+        // Set width once when hidden
+        if (selectWrapper) {
+          selectWrapper.style.width = '35rem';
+          selectWrapper.style.transition = 'width 0.3s ease'; // Optional: smooth transition
+          footer.style.left = '30rem';
+          footer.style.transition = 'left 0.3s ease'; // Optional: smooth transition
+        }
+      } else {
+        allsideDividers.forEach(item => {
+          item.textContent = item.dataset.text;
+        });
+        // Set width once when visible (outside the loop)
+        if (selectWrapper) {
+          selectWrapper.style.width = '20rem';
+          footer.style.left = '18rem';
+        }
+      }
+    });
   }
 
-  const toggleBtn = document.getElementById("toggle-theme");
-  const html = document.documentElement;
   if (toggleBtn) {
     const updateIcon = (theme) => {
       toggleBtn.classList.remove("fa-sun", "fa-moon");
       toggleBtn.classList.add(theme === "dark" ? "fa-sun" : "fa-moon");
     };
-
     const savedTheme = localStorage.getItem("theme") || "light";
     html.setAttribute("data-theme", savedTheme);
     updateIcon(savedTheme);
-
     toggleBtn.addEventListener("click", () => {
       const newTheme = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
       html.setAttribute("data-theme", newTheme);
@@ -230,4 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
       dropdownProfile.classList.remove('show');
     }
   });
+
+  init();
 });

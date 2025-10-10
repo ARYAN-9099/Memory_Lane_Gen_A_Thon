@@ -1,98 +1,186 @@
+:root {
+  --bg-color: #f4f6fb;
+  --card-color: #ffffff;
+  --text-color: #0f172a;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --border: #d9e0f0;
+  --muted: #64748b;
+  --badge-bg: #e0e7ff;
+  --badge-text: #312e81;
+}
+
+/* Add a [data-theme="dark"] section here if you want to theme the popup */
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
   margin: 0;
-  padding: 12px;
-  width: 320px;
-  background: #f7f9fc;
-  color: #1f2933;
+  padding: 1rem;
+  width: 380px;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+  width: 100%;
+  text-align: center;
 }
 
 .auth {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto auto auto;
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
   align-items: center;
 }
 
 .auth input {
-  min-width: 80px;
-}
-
-h1 {
-  font-size: 16px;
-  margin: 0;
+  flex-grow: 1;
+  /* Allow inputs to take up space */
 }
 
 section {
-  margin-bottom: 12px;
+  margin-bottom: 1rem;
 }
 
-section.search {
+.search {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: flex-end;
 }
 
-#captureBtn,
-#searchBtn {
-  background-color: #2563eb;
-  border: none;
-  color: white;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
+.search #searchInput {
+  grid-column: 1 / -1;
 }
 
-#captureBtn:hover,
-#searchBtn:hover {
-  background-color: #1d4ed8;
+h2 {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  padding-left: 0.25rem;
 }
 
 input,
-select {
-  padding: 6px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
+select,
+button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--card-color);
+  color: var(--text-color);
+  height: 36px;
+}
+
+button {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--primary-hover);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#logoutBtn {
+  background-color: #ef4444;
+  border-color: #ef4444;
+}
+
+#logoutBtn:hover {
+  background-color: #dc2626;
 }
 
 ul {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 li {
-  background: white;
-  border-radius: 4px;
-  padding: 8px;
-  margin-bottom: 6px;
-  border: 1px solid #e2e8f0;
+  background: var(--card-color);
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
 }
 
 li .title {
-  font-weight: bold;
-  margin-bottom: 4px;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--primary);
+}
+
+li .meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+li .summary {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
 }
 
 .badge {
   display: inline-block;
-  background-color: #e0e7ff;
-  color: #312e81;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 11px;
-  margin-right: 4px;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-right: 0.25rem;
+  margin-top: 0.25rem;
 }
 
 footer {
-  font-size: 10px;
-  color: #64748b;
+  font-size: 0.75rem;
+  color: var(--muted);
   text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+#logoutBtn {
+  width: 48%;
+}
+
+#captureBtn {
+  width: 48%;
 }

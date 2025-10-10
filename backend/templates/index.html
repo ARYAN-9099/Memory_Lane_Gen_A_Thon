@@ -18,51 +18,45 @@
         <a href="#" class="brand"><span>MemoryLane.ai</span></a>
         <ul class="side-menu">
             <li>
-                <a class="active" href="/dash">
+                <a class="active" href="/">
                     <i class="fa-solid fa-paperclip icon"></i>
                     <span class="label">Dashboard</span>
                 </a>
             </li>
             <li class="divider" data-text="main">Main</li>
             <li>
-                <a href="/analysis">
+                <a href="/">
                     <i class="fa-solid fa-chart-simple icon"></i>
                     <span class="label">Analysis</span>
                 </a>
             </li>
             <li>
-                <a href="/inventory">
-                    <i class="fa-solid fa-boxes-stacked icon"></i>
-                    <span class="label">Inventory</span>
-                </a>
-            </li>
-            <li>
-                <a href="/charts">
+                <a href="/">
                     <i class="fa-solid fa-chart-pie icon"></i>
                     <span class="label">Charts</span>
                 </a>
             </li>
             <li>
-                <a href="/table">
+                <a href="/">
                     <i class="fa-solid fa-table icon"></i>
                     <span class="label">Tables</span>
                 </a>
             </li>
-            <li class="divider" data-text="OTHER">Other</li>
             <li>
-                <a href="#">
+                <a href="/">
                     <i class="fa-solid fa-comment icon"></i>
                     <span class="label">Suggestions</span>
                 </a>
             </li>
+            <li class="divider" data-text="OTHER">Other</li>
             <li>
-                <a href="#">
+                <a href="/">
                     <i class="fa-solid fa-pen-to-square icon"></i>
                     <span class="label">Feedback</span>
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="/">
                     <i class="fa-solid fa-phone-volume icon"></i>
                     <span class="label">Contact Us</span>
                 </a>
@@ -81,7 +75,7 @@
             <i class="fa-solid fa-bars toggle-sidebar"></i>
             <div class="nav-main-group">
                 <div>
-                    <p class="tagline">Your captured content, ready to rediscover.</p>
+                    <p class="tagline">ReDiscover Everything that Matters</p>
                 </div>
                 <div class="status" id="apiStatus">Checking API…</div>
             </div>
@@ -97,21 +91,27 @@
                 <section class="search-container card">
                     <div class="field">
                         <label for="searchInput">Keyword search</label>
-                        <input id="searchInput" type="text" placeholder="Try 'AI summary' or 'helpful'">
+                        <input id="searchInput" type="text" placeholder="Try 'Happy' or 'Helpful'">
                     </div>
-                    <div class="field">
+                    <div class="field select-wrapper">
                         <label for="emotionSelect">Emotion</label>
                         <select id="emotionSelect">
                             <option value="">Any emotion</option>
-                            <option value="excited">Excited</option>
+                            <option value="excited">Neutral</option>
                             <option value="happy">Happy</option>
-                            <option value="neutral">Neutral</option>
-                            <option value="thoughtful">Thoughtful</option>
-                            <option value="reflective">Reflective</option>
+                            <option value="neutral">Sad</option>
+                            <option value="thoughtful">Helpful</option>
+                            <option value="reflective">Surprised</option>
+                            <option value="reflective">Angry</option>
+                            <option value="reflective">Funny</option>
                         </select>
                     </div>
-                    <button id="searchBtn" class="primary">Search</button>
-                    <button id="resetBtn" class="ghost">Reset</button>
+                    <div>
+                        <button id="searchBtn" class="primary">Search</button>
+                    </div>
+                    <div>
+                        <button id="resetBtn" class="ghost">Reset</button>
+                    </div>
                 </section>
 
 
@@ -149,11 +149,13 @@
                 </section>
 
             </div>
+            <div class="footer">
+                <small>Extension captures sync live. Keep the API running on http://localhost:5000.</small>
+            </div>
         </main>
+
     </section>
-    <footer>
-        <small>Extension captures sync live. Keep the API running on http://localhost:5000.</small>
-    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </body>
 

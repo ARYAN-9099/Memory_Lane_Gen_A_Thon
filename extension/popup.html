@@ -1,41 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Memory Lane Snapshot</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
   <header>
     <h1>Memory Lane</h1>
     <div class="auth">
       <input id="emailInput" type="email" placeholder="email" />
       <input id="passwordInput" type="password" placeholder="password" />
-      <button id="loginBtn" title="Login">Login</button>
-      <button id="logoutBtn" title="Logout" style="display:none;">Logout</button>
+      <button class="authBtns" id="loginBtn" title="Login">Login</button>
+      <button class="authBtns" id="logoutBtn" title="Logout" style="display:none;">Logout</button>
       <button id="captureBtn" title="Capture current tab">Capture</button>
     </div>
   </header>
 
   <section class="search">
-    <input id="searchInput" type="text" placeholder="Search your memories" />
+    <!-- <input id="searchInput" type="text" placeholder="Search your memories" /> -->
     <select id="emotionFilter">
-      <option value="any">Any emotion</option>
-      <option value="excited">Excited</option>
+      <option value="">Any emotion</option>
+      <option value="excited">Neutral</option>
       <option value="happy">Happy</option>
-      <option value="neutral">Neutral</option>
-      <option value="thoughtful">Thoughtful</option>
-      <option value="reflective">Reflective</option>
+      <option value="neutral">Sad</option>
+      <option value="thoughtful">Helpful</option>
+      <option value="reflective">Surprised</option>
+      <option value="reflective">Angry</option>
+      <option value="reflective">Funny</option>
     </select>
     <button id="searchBtn">Search</button>
   </section>
 
-  <section>
+  <section id="recentSection">
     <h2>Recent</h2>
     <ul id="timelineList"></ul>
   </section>
 
-  <section>
+  <section id="resultsSection">
     <h2>Results</h2>
     <ul id="resultsList"></ul>
   </section>
@@ -46,4 +50,5 @@
 
   <script src="popup.js"></script>
 </body>
+
 </html>

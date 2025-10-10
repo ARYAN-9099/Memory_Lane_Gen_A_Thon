@@ -235,6 +235,11 @@ li {
   width: calc(100% - 260px);
   left: 260px;
   transition: all .3s ease;
+
+  /* --- ADD THESE LINES --- */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 #dash-content {
@@ -270,7 +275,7 @@ nav .toggle-sidebar {
 
 nav .nav-link {
   position: relative;
-  /* margin-right: .3rem; */
+  margin-right: .5rem;
 }
 
 nav .nav-link .icon {
@@ -617,7 +622,7 @@ nav .nav-main-group {
 
 .tagline {
   font-size: 14px;
-  color: var(--d-gray-color);
+  color: var(--text-color);
 }
 
 .status {
@@ -627,6 +632,8 @@ nav .nav-main-group {
   color: #136944;
   font-size: 14px;
   display: inline-block;
+  position: absolute;
+  right: 12rem;
 }
 
 .status[data-variant="error"] {
@@ -664,7 +671,7 @@ select {
   padding: 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background-color: var(--bg-color);
+  /* background-color: var(--bg-color); */
   color: var(--text-color);
   font-size: 14px;
 }
@@ -757,7 +764,8 @@ button.ghost {
 }
 
 .slider-section {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  height: 332px;
 }
 
 .slider-header {
@@ -782,6 +790,11 @@ button.ghost {
   cursor: pointer;
 }
 
+#resetBtn {
+  background-color: var(--d-gray-color);
+  color: var(--light-card);
+}
+
 .slider-nav button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -796,13 +809,8 @@ button.ghost {
   display: flex;
   gap: 24px;
   transition: transform 0.5s ease-in-out;
-}
-
-.slider-track .card {
-  flex: 0 0 calc((100% / 3) - 16px);
-  min-height: 200px;
-  min-width: 160px;
-  max-width: 340px;
+  margin-bottom: 100px;
+  height: 180px;
 }
 
 .slider-track .card {
@@ -810,32 +818,190 @@ button.ghost {
   min-height: 240px;
   min-width: 160px;
   max-width: 340px;
+  height: 160px;
 }
 
-#resultsList {
+/* #resultsList {
   max-height: 240px;
-  margin-bottom: 10rem;
-}
+} */
 
 .item-summary {
-  max-height: 110px;
+  max-height: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.search-container {
+  flex-direction: row;
+  background: var(--bg-color);
+  margin-bottom: 40px;
+}
+
+[data-theme="dark"] .search-container.card {
+  background: var(--bg-color);
+  border: 0;
+  box-shadow: none;
+}
+
+.search-container .card {
+  justify-content: space-between;
+}
+
+#sidebar .divider {
+  margin: 1.6rem 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(0, 0, 103, 0.753);
+  position: relative;
+  left: 0.3rem;
+  transition: all 0.3s ease;
+}
+
+#sidebar.hide .divider {
+  /* text-align: center; */
+  position: relative;
+  left: 1.4rem;
+}
+
+main .breadcrumbs li a.active,
+main .breadcrumbs li.divider {
+  color: var(--d-gray-color);
+  pointer-events: none;
+}
+
+.search-container.card {
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+  width: 99%;
+}
+
+#searchBtn {
+  width: 10rem;
+}
+
+#resetBtn {
+  width: 10rem;
+}
+
+#searchInput {
+  width: 30rem;
+}
+
+#emotionSelect {
+  width: 21rem;
+}
+
+/* 1. Set up the wrapper for positioning */
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  /* Or a specific width */
+}
+
+/* 2. Hide the default dropdown arrow */
+select {
+  /* Remove default browser styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 30px;
+  width: 100%;
+}
+
+/* 3. Create and position the new custom arrow */
+.select-wrapper::after {
+  content: '\f078';
+  /* Font Awesome down-arrow icon */
+  font-family: "Font Awesome 5 Free", "Font Awesome 6 Free";
+  font-weight: 900;
+
+  position: absolute;
+  top: 42px;
+  right: 15px;
+  /* Adjust this value to move the arrow left or right */
+  transform: translateY(-50%);
+
+  font-size: 12px;
+  color: #555;
+  pointer-events: none;
+  /* Allows clicks to pass through to the select box */
+}
+
+#emotionSelect {
+  height: 36.4px;
+}
+
+.select-wrapper label {
+  position: relative;
+  bottom: 6px;
+}
+
+[data-theme="dark"] #emotionSelect {
+  color: var(--dark-bg);
+}
+
+main {
+  width: 100%;
+  /* padding: 24px; */
+
+  /* --- ADD THIS LINE --- */
+  flex-grow: 1;
+}
+
+#content {
+  position: relative;
+  width: calc(100% - 260px);
+  left: 260px;
+  transition: all .3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 footer {
+  display: inline;
   padding: 12px 20px;
   text-align: center;
   color: var(--d-gray-color);
   font-size: 12px;
   width: 100%;
+  flex-shrink: 0;
+  /* Prevents the footer from shrinking */
 }
 
-.search-container {
-  flex-direction: row;
-
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
 }
 
-.search-container .card {
-  justify-content: space-between;
+.footer {
+  margin-top: 7rem;
+  position: relative;
+  left: 18rem;
+  bottom: .5rem;
+  width: 30rem;
+}
+
+.slider-section {
+    position: relative; /* Creates a positioning context for z-index to work */
+    margin-bottom: 32px;
+}
+
+.slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    /* Add these two lines to lift the header to the top layer */
+    position: relative;
+    z-index: 10;
+}
+
+.slider-section .card {
+  height: 200px;
+  padding-bottom: 10px;
 }
