@@ -8,4 +8,5 @@ beautifulsoup4==4.12.3
 lxml
 google-generativeai
 python-dotenv
+reportlab==4.0.7
 

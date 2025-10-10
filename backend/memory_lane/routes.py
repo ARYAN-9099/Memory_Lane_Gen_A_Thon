@@ -4,13 +4,14 @@ from urllib.parse import urlparse
 import secrets
 from datetime import datetime
 
-from flask import Blueprint, Flask, jsonify, request, session, redirect, url_for, g
+from flask import Blueprint, Flask, jsonify, request, session, redirect, url_for, g, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from .ai_pipeline import AIPipeline
 from .database import Database
 from .extractor import extract_text
 from .worker import EnrichmentWorker
+from .pdf_export import generate_user_pdf, REPORTLAB_AVAILABLE
 
 
 def register_routes(app: Flask, database: Database) -> None:
@@ -201,6 +202,50 @@ def register_routes(app: Flask, database: Database) -> None:
                 "email": user["email"],
             }
         })
+
+    @api.route("/export/pdf", methods=["GET"])
+    def export_pdf():
+        """Export all user data as a PDF file."""
+        user = _require_user()
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        if not REPORTLAB_AVAILABLE:
+            return jsonify({
+                "error": "PDF export is not available. Please install reportlab."
+            }), 503
+        
+        try:
+            # Get all user items (no limit)
+            items = database.search_items(user_id=int(user["id"]), limit=10000)
+            insights = database.get_insights(user_id=int(user["id"]))
+            
+            # Convert items to dicts
+            items_dicts = [item.to_dict() for item in items]
+            
+            # Generate PDF
+            pdf_bytes = generate_user_pdf(
+                user_email=user["email"],
+                items=items_dicts,
+                insights=insights
+            )
+            
+            # Create a response with the PDF
+            import io
+            pdf_buffer = io.BytesIO(pdf_bytes)
+            pdf_buffer.seek(0)
+            
+            filename = f"memory_lane_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            
+            return send_file(
+                pdf_buffer,
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=filename
+            )
+            
+        except Exception as e:
+            return jsonify({"error": f"Failed to generate PDF: {str(e)}"}), 500
 
     # Register blueprint after all routes are defined
     app.register_blueprint(api)
