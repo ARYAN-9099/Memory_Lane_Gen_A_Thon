@@ -13,6 +13,7 @@ from typing import Any, Generator
 @dataclass
 class Item:
     id: int
+    user_id: int
     url: str
     title: str
     source: str
@@ -29,6 +30,7 @@ class Item:
     def from_row(cls, row: sqlite3.Row) -> "Item":
         return cls(
             id=row["id"],
+            user_id=row["user_id"],
             url=row["url"],
             title=row["title"],
             source=row["source"],
@@ -45,6 +47,7 @@ class Item:
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
+            "userId": self.user_id,
             "url": self.url,
             "title": self.title,
             "source": self.source,
@@ -72,6 +75,7 @@ class Database:
                 """
                 CREATE TABLE IF NOT EXISTS items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
                     url TEXT,
                     title TEXT,
                     source TEXT,
@@ -86,6 +90,18 @@ class Database:
                 )
                 """
             )
+            # Users table
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    api_token TEXT UNIQUE NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS tags (
@@ -95,6 +111,11 @@ class Database:
                 )
                 """
             )
+            # Migration: ensure user_id column exists on items
+            try:
+                conn.execute("ALTER TABLE items ADD COLUMN user_id INTEGER")
+            except Exception:
+                pass
             conn.commit()
 
     @contextmanager
@@ -108,6 +129,7 @@ class Database:
 
     def insert_item(
         self,
+        user_id: int,
         url: str,
         title: str,
         source: str,
@@ -121,6 +143,7 @@ class Database:
     ) -> Item:
         created_at = datetime.utcnow().isoformat()
         payload = (
+            user_id,
             url,
             title,
             source,
@@ -138,9 +161,9 @@ class Database:
             cursor.execute(
                 """
                 INSERT INTO items (
-                    url, title, source, content_type, content, summary,
+                    user_id, url, title, source, content_type, content, summary,
                     keywords, emotion, sentiment_score, thumbnail, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 payload,
             )
@@ -154,12 +177,13 @@ class Database:
 
     def search_items(
         self,
+        user_id: int,
         query: str | None = None,
         emotion: str | None = None,
         limit: int = 25,
     ) -> list[Item]:
-        sql = "SELECT * FROM items"
-        params: list[Any] = []
+        sql = "SELECT * FROM items WHERE user_id = ?"
+        params: list[Any] = [user_id]
         clauses: list[str] = []
 
         if query:
@@ -174,7 +198,7 @@ class Database:
             params.append(emotion)
 
         if clauses:
-            sql += " WHERE " + " AND ".join(clauses)
+            sql += " AND " + " AND ".join(clauses)
 
         sql += " ORDER BY datetime(created_at) DESC LIMIT ?"
         params.append(limit)
@@ -183,30 +207,41 @@ class Database:
             rows = conn.execute(sql, params).fetchall()
             return [Item.from_row(row) for row in rows]
 
-    def get_item(self, item_id: int) -> Item | None:
+    def get_item(self, user_id: int, item_id: int) -> Item | None:
         with self._get_connection() as conn:
-            row = conn.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
+            row = conn.execute("SELECT * FROM items WHERE id = ? AND user_id = ?", (item_id, user_id)).fetchone()
             return Item.from_row(row) if row else None
 
-    def list_recent(self, limit: int = 10) -> list[Item]:
+    def list_recent(self, user_id: int, limit: int = 10) -> list[Item]:
         with self._get_connection() as conn:
             rows = conn.execute(
-                "SELECT * FROM items ORDER BY datetime(created_at) DESC LIMIT ?",
-                (limit,),
+                "SELECT * FROM items WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT ?",
+                (user_id, limit),
             ).fetchall()
             return [Item.from_row(row) for row in rows]
 
-    def get_insights(self) -> dict[str, Any]:
+    def get_insights(self, user_id: int) -> dict[str, Any]:
         with self._get_connection() as conn:
-            total_items = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+            total_items = conn.execute("SELECT COUNT(*) FROM items WHERE user_id = ?", (user_id,)).fetchone()[0]
             by_content_type = conn.execute(
-                "SELECT content_type, COUNT(*) as count FROM items GROUP BY content_type"
+                "SELECT content_type, COUNT(*) as count FROM items WHERE user_id = ? GROUP BY content_type",
+                (user_id,),
             ).fetchall()
             by_emotion = conn.execute(
-                "SELECT emotion, COUNT(*) as count FROM items GROUP BY emotion"
+                "SELECT emotion, COUNT(*) as count FROM items WHERE user_id = ? GROUP BY emotion",
+                (user_id,),
             ).fetchall()
             top_tags = conn.execute(
-                "SELECT tag, COUNT(*) as count FROM tags GROUP BY tag ORDER BY count DESC LIMIT 10"
+                """
+                SELECT t.tag, COUNT(*) as count
+                FROM tags t
+                JOIN items i ON i.id = t.item_id
+                WHERE i.user_id = ?
+                GROUP BY t.tag
+                ORDER BY count DESC
+                LIMIT 10
+                """,
+                (user_id,),
             ).fetchall()
 
         return {
@@ -219,9 +254,9 @@ class Database:
             ],
         }
 
-    def delete_item(self, item_id: int) -> None:
+    def delete_item(self, user_id: int, item_id: int) -> None:
         with self._get_connection() as conn:
-            conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
+            conn.execute("DELETE FROM items WHERE id = ? AND user_id = ?", (item_id, user_id))
             conn.execute("DELETE FROM tags WHERE item_id = ?", (item_id,))
             conn.commit()
 
@@ -236,3 +271,30 @@ class Database:
             rows = conn.execute("SELECT tag FROM tags").fetchall()
         counts: Counter[str] = Counter(row["tag"] for row in rows)
         return counts
+
+    # User helpers
+    def create_user(self, email: str, password_hash: str, api_token: str) -> int:
+        created_at = datetime.utcnow().isoformat()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO users (email, password_hash, api_token, created_at) VALUES (?, ?, ?, ?)",
+                (email, password_hash, api_token, created_at),
+            )
+            conn.commit()
+            return int(cur.lastrowid)
+
+    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+            return dict(row) if row else None
+
+    def get_user_by_token(self, token: str) -> dict[str, Any] | None:
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM users WHERE api_token = ?", (token,)).fetchone()
+            return dict(row) if row else None
+
+    def get_user_by_id(self, user_id: int) -> dict[str, Any] | None:
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+            return dict(row) if row else None

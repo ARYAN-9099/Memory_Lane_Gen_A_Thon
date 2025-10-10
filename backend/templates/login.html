@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login • Memory Lane</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <style>
+    .login-card { max-width: 440px; margin: 10vh auto; padding: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
+    .login-card h1 { margin: 0 0 12px; }
+    .login-card .muted { margin-bottom: 12px; }
+    .login-card form { display: grid; gap: 10px; }
+    .login-card input { padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; }
+    .actions { display: flex; gap: 8px; align-items: center; }
+    .error { color: #b91c1c; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Memory Lane</h1>
+    <p class="muted">Sign in to your library</p>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form method="post" action="/api/auth/login" onsubmit="return onSubmit(event)">
+      <input type="email" id="email" name="email" placeholder="Email" required />
+      <input type="password" id="password" name="password" placeholder="Password" required />
+      <div class="actions">
+        <button class="primary" type="submit">Login</button>
+        <button class="ghost" type="button" onclick="register()">Register</button>
+      </div>
+    </form>
+  </div>
+  <script>
+    async function onSubmit(e){
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email,password}) });
+      const data = await res.json();
+      if(!res.ok){ alert(data.error||'Login failed'); return false; }
+      // Session cookie is set by server; redirect to dashboard
+      location.href = '/';
+      return false;
+    }
+    async function register(){
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if(!email||!password){ alert('Enter email and password'); return; }
+      const res = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email,password}) });
+      const data = await res.json();
+      if(!res.ok){ alert(data.error||'Registration failed'); return; }
+      location.href = '/';
+    }
+  </script>
+</body>
+</html>

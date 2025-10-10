@@ -1,6 +1,10 @@
 const timelineList = document.getElementById('timelineList');
 const resultsList = document.getElementById('resultsList');
 const captureBtn = document.getElementById('captureBtn');
+const emailInput = document.getElementById('emailInput');
+const passwordInput = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 const searchBtn = document.getElementById('searchBtn');
 const searchInput = document.getElementById('searchInput');
 const emotionFilter = document.getElementById('emotionFilter');
@@ -115,3 +119,54 @@ searchInput.addEventListener('keydown', event => {
 });
 
 refreshTimeline();
+
+// Auth helpers
+async function setTokenInBackground(token) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'auth-set-token', token }, () => resolve());
+  });
+}
+
+async function clearTokenInBackground() {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'auth-clear-token' }, () => resolve());
+  });
+}
+
+async function login() {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !password) {
+    alert('Enter email and password');
+    return;
+  }
+  try {
+    const res = await fetch('http://localhost:5000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    await setTokenInBackground(data.token);
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+    emailInput.style.display = 'none';
+    passwordInput.style.display = 'none';
+    await refreshTimeline();
+    await performSearch();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function logout() {
+  await clearTokenInBackground();
+  loginBtn.style.display = 'inline-block';
+  logoutBtn.style.display = 'none';
+  emailInput.style.display = 'inline-block';
+  passwordInput.style.display = 'inline-block';
+}
+
+loginBtn.addEventListener('click', login);
+logoutBtn.addEventListener('click', logout);

@@ -1,16 +1,7 @@
 // Auto-capture visible text on page load and SPA navigations, then send to background.
 (function () {
   const WAIT_MS = 1200;
-  const MAX_TEXT = 20000;
   const sentForUrl = new Set();
-
-  function getText() {
-    try {
-      return document.body ? (document.body.innerText || '') : '';
-    } catch (e) {
-      return '';
-    }
-  }
 
   function getDescription() {
     return document.querySelector('meta[name="description"]')?.content || '';
@@ -21,25 +12,18 @@
   }
 
   function sendNow() {
-    const fullText = getText();
-    const text = fullText.length > MAX_TEXT ? fullText.slice(0, MAX_TEXT) : fullText;
     const payload = {
       url: location.href,
       title: document.title || '',
       description: getDescription(),
       ogImage: getOgImage(),
-      text,
-      length: fullText.length
     };
 
     try {
-      chrome.runtime.sendMessage({ type: 'AUTO_PAGE_CONTENT', payload }, () => {
-        // Avoid unchecked lastError warnings on navigation
+      chrome.runtime.sendMessage({ type: 'URL_METADATA', payload }, () => {
         const _ = chrome.runtime.lastError;
       });
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }
 
   function scheduleOncePerUrl() {
