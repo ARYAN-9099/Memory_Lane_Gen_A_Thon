@@ -132,6 +132,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     clearToken().then(() => sendResponse({ ok: true }));
     return true;
   }
+  if (message?.type === 'auth-login') {
+    // Handle login request from popup
+    const { email, password } = message;
+    fetch(`${BACKEND_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    })
+      .then(async response => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Login failed: ${errorText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Store the token
+        return setToken(data.token).then(() => {
+          sendResponse({ userId: data.userId, token: data.token });
+        });
+      })
+      .catch(error => {
+        sendResponse({ error: error.message });
+      });
+    return true; // Will respond asynchronously
+  }
+  if (message?.type === 'auth-get-status') {
+    // Check if user is logged in
+    getToken().then(token => {
+      sendResponse({ isLoggedIn: !!token });
+    });
+    return true; // Will respond asynchronously
+  }
   return false;
 });
 

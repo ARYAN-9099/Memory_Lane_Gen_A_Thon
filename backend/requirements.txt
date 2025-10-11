@@ -9,4 +9,4 @@ lxml
 google-generativeai
 python-dotenv
 reportlab==4.0.7
-
+ollama

@@ -157,7 +157,7 @@ class AIPipeline:
             emotion = parsed[3] or ""
             return keywords, emotion
         # Fallback: heuristic keywords, emotion unknown for now
-        return self._basic_keywords(text, limit=limit), ""
+        return self._basic_keywords(text, limit=3), ""
 
     def analyse_sentiment(self, text: str) -> float:
         scores = self._sentiment.polarity_scores(text or "")
