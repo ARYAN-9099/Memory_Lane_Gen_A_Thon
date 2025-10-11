@@ -12,3 +12,5 @@ memory_lane.db
 .env
 test.py
 .venv/
+venv/
+env/

@@ -8,6 +8,9 @@ const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const searchBtn = document.getElementById('searchBtn');
 const emotionFilter = document.getElementById('emotionFilter');
+const excludeInput = document.getElementById('excludeInput');
+const addExcludeBtn = document.getElementById('addExcludeBtn');
+const exclusionsList = document.getElementById('exclusionsList');
 
 // --- UI MANAGEMENT FUNCTIONS ---
 function showLoggedInUI() {
@@ -110,19 +113,49 @@ async function performSearch() {
       throw new Error(response.error);
     }
 
-    renderItems(resultsList, response.results, 'Nothing matched your search.');
+  renderItems(resultsList, response.results, 'Nothing matched your search.');
+}
 
-    const resultsSection = document.getElementById('resultsSection');
-    const recentSection = document.getElementById('recentSection');
-    if (resultsSection && recentSection) {
-      recentSection.parentElement.insertBefore(resultsSection, recentSection);
-    }
+captureBtn.addEventListener('click', async () => {
+  captureBtn.disabled = true;
+  captureBtn.textContent = 'Saving…';
 
-  } catch (e) {
-    renderItems(resultsList, [], `Search failed: ${e.message}`);
-  } finally {
-    searchBtn.disabled = false;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const response = await chrome.runtime.sendMessage({
+    type: 'capture-current-tab',
+    tabId: tab.id
+  });
+
+  if (response?.error) {
+    alert(response.error);
+  } else {
+    await refreshTimeline();
   }
+
+  captureBtn.disabled = false;
+  captureBtn.textContent = 'Capture';
+});
+
+searchBtn.addEventListener('click', performSearch);
+searchInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    performSearch();
+  }
+});
+
+refreshTimeline();
+
+// Auth helpers
+async function setTokenInBackground(token) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'auth-set-token', token }, () => resolve());
+  });
+}
+
+async function clearTokenInBackground() {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'auth-clear-token' }, () => resolve());
+  });
 }
 
 async function login() {
