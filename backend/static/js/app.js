@@ -574,23 +574,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx = chart.ctx;
           ctx.restore();
           
-          // Calculate center position
-          const centerX = width / 2;
-          const centerY = height / 2;
+          // Get the chart area for proper centering
+          const chartArea = chart.chartArea;
+          if (!chartArea) return;
+          
+          // Calculate center position using chart area
+          const centerX = (chartArea.left + chartArea.right) / 2;
+          const centerY = (chartArea.top + chartArea.bottom) / 2;
           
           // Draw total number
-          const fontSize = (height / 160).toFixed(2);
-          ctx.font = `bold ${fontSize}em sans-serif`;
+          const fontSize = Math.min(width, height) / 8;
+          ctx.font = `bold ${fontSize}px sans-serif`;
           ctx.textBaseline = "middle";
           ctx.textAlign = "center";
           
           const text = String(total);
           ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-          ctx.fillText(text, centerX, centerY - 10);
+          ctx.fillText(text, centerX, centerY - fontSize * 0.15);
           
           // Draw "Total" label
-          ctx.font = `${(fontSize * 0.5)}em sans-serif`;
-          ctx.fillText("Total", centerX, centerY + 18);
+          ctx.font = `${fontSize * 0.4}px sans-serif`;
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--d-gray-color').trim();
+          ctx.fillText("Total", centerX, centerY + fontSize * 0.5);
           
           ctx.save();
         }
@@ -759,11 +764,8 @@ document.addEventListener('DOMContentLoaded', () => {
           data: topKeywords.map(([, count]) => count),
           backgroundColor: colors,
           borderColor: colors.map(c => c),
-          borderWidth: 2,
-          borderRadius: 12,
-          barThickness: 30,
-          categoryPercentage: 0.9,
-          barPercentage: 0.6
+          borderWidth: 0,
+          borderRadius: 8
         }]
       },
       options: {
@@ -772,10 +774,10 @@ document.addEventListener('DOMContentLoaded', () => {
         maintainAspectRatio: true,
         layout: {
           padding: {
-            top: 10,
-            bottom: 10,
+            top: 15,
+            bottom: 15,
             left: 10,
-            right: 10
+            right: 20
           }
         },
         scales: {
@@ -800,7 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
               font: {
                 size: 13,
                 weight: '600'
-              }
+              },
+              padding: 15
             },
             grid: {
               display: false
