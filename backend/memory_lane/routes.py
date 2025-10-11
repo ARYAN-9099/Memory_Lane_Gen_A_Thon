@@ -3,6 +3,9 @@ from __future__ import annotations
 from urllib.parse import urlparse
 import secrets
 from datetime import datetime
+import os
+from typing import List, Tuple
+from dotenv import load_dotenv
 
 from flask import Blueprint, Flask, jsonify, request, session, redirect, url_for, g, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,6 +15,72 @@ from .database import Database
 from .extractor import extract_text
 from .worker import EnrichmentWorker
 from .pdf_export import generate_user_pdf, REPORTLAB_AVAILABLE
+
+# Load environment variables
+load_dotenv()
+
+# --- Gemini setup for chatbot ---
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+gemini_model = None
+try:
+    if GEMINI_API_KEY:
+        import google.generativeai as genai
+
+        genai.configure(api_key=GEMINI_API_KEY)
+        generation_config = {
+            "temperature": 0.2,
+            "top_p": 0.95,
+            "max_output_tokens": 512,
+        }
+        safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+        ]
+        try:
+            gemini_model = genai.GenerativeModel(
+                model_name="gemini-2.0-flash",
+                generation_config=generation_config,
+                safety_settings=safety_settings,
+            )
+        except Exception:
+            gemini_model = None
+except Exception:
+    gemini_model = None
+
+
+def gemini_generate_with_summaries(user_message: str, summaries: List[Tuple[str, str]]) -> str:
+    """Generate a Gemini reply using user summaries (timestamp, text) as context."""
+    if not gemini_model:
+        return ''
+    try:
+        MAX_SUMMARIES = 20
+        TRUNCATE_PER_SUMMARY = 800
+        ctx_items = []
+        for idx, (created_at, summ) in enumerate(summaries[:MAX_SUMMARIES], start=1):
+            s = (summ or '').strip()
+            if len(s) > TRUNCATE_PER_SUMMARY:
+                s = s[:TRUNCATE_PER_SUMMARY] + '...'
+            ctx_items.append(f"[{created_at}] {s}")
+
+        context_block = "\n".join(ctx_items) if ctx_items else "(no stored summaries available)"
+
+        prompt = (
+            "You are a concise assistant with access to a user's personal memory summaries. "
+            "Use the provided summaries below to answer questions. "
+            "If the answer is not present in the summaries, be honest and suggest a next step.\n\n"
+            "User summaries (most recent first):\n" + context_block + "\n\n"
+            "User question: " + user_message + "\nAssistant:"
+        )
+
+        response = gemini_model.generate_content(prompt)
+        if hasattr(response, 'text'):
+            return (response.text or '').strip()
+        return str(response).strip()
+    except Exception as e:
+        print(f"Gemini generation (with summaries) failed: {e}")
+        return ''
 
 
 def register_routes(app: Flask, database: Database) -> None:
@@ -284,6 +353,34 @@ def register_routes(app: Flask, database: Database) -> None:
             
         except Exception as e:
             return jsonify({"error": f"Failed to generate PDF: {str(e)}"}), 500
+
+    # --- Chatbot Routes ---
+    @api.route("/chat", methods=["POST"])
+    def chat():
+        """Handle chatbot messages using Gemini with user's memory summaries as context."""
+        user = _require_user()
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        data = request.get_json(silent=True) or {}
+        msg = data.get('message', '')
+        
+        if not isinstance(msg, str) or not msg.strip():
+            return jsonify({'reply': 'Please send a non-empty message.'}), 400
+
+        if not gemini_model:
+            return jsonify({'error': 'Gemini model not configured. Set GEMINI_API_KEY in .env or environment.'}), 503
+
+        # Fetch user summaries from database
+        user_id = user.get("id")
+        summaries = database.fetch_user_summaries(user_id, limit=20) if user_id else []
+
+        # Generate reply using summaries
+        reply = gemini_generate_with_summaries(msg, summaries)
+        if not reply:
+            return jsonify({'error': 'Gemini failed to generate a reply.'}), 502
+
+        return jsonify({'reply': reply})
 
     # Register blueprint after all routes are defined
     app.register_blueprint(api)

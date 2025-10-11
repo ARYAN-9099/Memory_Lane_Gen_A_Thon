@@ -920,7 +920,7 @@ button.ghost {
 } */
 
 .item-summary {
-  max-height: 90px;
+  max-height: 87px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

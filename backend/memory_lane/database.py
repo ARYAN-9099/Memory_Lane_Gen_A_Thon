@@ -484,3 +484,19 @@ class Database:
         with self._get_connection() as conn:
             row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
             return dict(row) if row else None
+
+    def fetch_user_summaries(self, user_id: int, limit: int = 20) -> list[tuple[str, str]]:
+        """Fetch up to `limit` summaries for `user_id` from the database.
+        
+        Returns a list of tuples: (created_at, summary)
+        """
+        try:
+            with self._get_connection() as conn:
+                rows = conn.execute(
+                    "SELECT created_at, summary FROM items WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT ?",
+                    (user_id, limit),
+                ).fetchall()
+                return [(str(row["created_at"]), str(row["summary"] or "")) for row in rows]
+        except Exception as e:
+            print(f"Error fetching summaries from DB: {e}")
+            return []
