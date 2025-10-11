@@ -184,6 +184,18 @@ def register_routes(app: Flask, database: Database) -> None:
             return jsonify({"error": "Invalid credentials"}), 401
         session["user_id"] = int(user["id"])
         return jsonify({"userId": user["id"], "token": user["api_token"]})
+    
+    @app.route("/api/favorites")
+    def get_favorites():
+        # This is just an example. You'll need to create a real query
+        # to get your "favorite" items from the database.
+        # For now, it just gets the most recent items.
+        limit = request.args.get("limit", 15, type=int)
+        
+        # You would replace this with a real database query for favorites
+        items = database.list_recent(user_id=int(g.user["id"]), limit=limit)
+        
+        return jsonify({"items": [item.to_dict() for item in items]})
 
     @api.route("/auth/logout", methods=["POST"])  # website logout; extension ignores
     def logout():

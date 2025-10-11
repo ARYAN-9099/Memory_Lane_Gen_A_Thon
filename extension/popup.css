@@ -177,6 +177,14 @@ footer {
   margin-top: 0.5rem;
 }
 
+#excludeInput {
+  width: 16rem;
+}
+
+#addExcludeBtn {
+  width: 5rem;;
+}
+
 #logoutBtn {
   width: 48%;
 }

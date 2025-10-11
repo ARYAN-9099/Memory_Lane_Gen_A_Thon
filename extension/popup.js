@@ -7,10 +7,18 @@ const passwordInput = document.getElementById('passwordInput');
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const searchBtn = document.getElementById('searchBtn');
+const searchInput = document.getElementById('searchInput');
 const emotionFilter = document.getElementById('emotionFilter');
 const excludeInput = document.getElementById('excludeInput');
 const addExcludeBtn = document.getElementById('addExcludeBtn');
 const exclusionsList = document.getElementById('exclusionsList');
+// --- FIX 1: Add selectors for the sections ---
+const recentSection = document.getElementById('recentSection');
+const resultsSection = document.getElementById('resultsSection');
+
+
+// --- STATE ---
+let excludedKeywords = [];
 
 // --- UI MANAGEMENT FUNCTIONS ---
 function showLoggedInUI() {
@@ -28,11 +36,12 @@ function showLoggedOutUI() {
   logoutBtn.style.display = 'none';
   captureBtn.style.display = 'none';
   renderItems(timelineList, [], 'Please log in to see recent captures.');
-  renderItems(resultsList, [], 'Please log in to search.');
+  renderItems(resultsList, [], 'Apply filter to see results');
 }
 
 // --- RENDERING FUNCTION ---
 function renderItems(listElement, items, emptyMessage) {
+  if (!listElement) return;
   listElement.innerHTML = '';
   if (!items || !items.length) {
     const li = document.createElement('li');
@@ -80,6 +89,25 @@ function renderItems(listElement, items, emptyMessage) {
   });
 }
 
+function renderExclusions() {
+  if (!exclusionsList) return;
+  exclusionsList.innerHTML = '';
+  excludedKeywords.forEach((keyword, index) => {
+    const li = document.createElement('li');
+    li.className = 'exclusion-item';
+    li.textContent = keyword;
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '×';
+    removeBtn.onclick = () => {
+      excludedKeywords.splice(index, 1);
+      renderExclusions();
+      performSearch();
+    };
+    li.appendChild(removeBtn);
+    exclusionsList.appendChild(li);
+  });
+}
+
 // --- API & CHROME RUNTIME FUNCTIONS ---
 async function refreshTimeline() {
   const response = await chrome.runtime.sendMessage({ type: 'fetch-timeline', limit: 5 });
@@ -91,71 +119,33 @@ async function refreshTimeline() {
 }
 
 async function performSearch() {
-  searchBtn.disabled = true;
+  if (searchBtn) searchBtn.disabled = true;
   try {
+    const query = searchInput ? searchInput.value.trim() : '';
     const emotion = emotionFilter.value;
-
     const message = {
       type: 'search-library',
-      query: '' // Always send an empty query
+      query: query,
+      exclude: excludedKeywords
     };
-
     if (emotion) {
       message.emotion = emotion;
     }
-
     const response = await chrome.runtime.sendMessage(message);
+    if (!response) throw new Error("No response from background script.");
+    if (response.error) throw new Error(response.error);
+    renderItems(resultsList, response.results, 'Nothing matched your search.');
 
-    if (!response) {
-      throw new Error("No response from background script.");
+    // --- FIX 2: Add the reordering logic here ---
+    if (resultsSection && recentSection) {
+      recentSection.parentElement.insertBefore(resultsSection, recentSection);
     }
-    if (response.error) {
-      throw new Error(response.error);
-    }
 
-  renderItems(resultsList, response.results, 'Nothing matched your search.');
-}
-
-captureBtn.addEventListener('click', async () => {
-  captureBtn.disabled = true;
-  captureBtn.textContent = 'Saving…';
-
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const response = await chrome.runtime.sendMessage({
-    type: 'capture-current-tab',
-    tabId: tab.id
-  });
-
-  if (response?.error) {
-    alert(response.error);
-  } else {
-    await refreshTimeline();
+  } catch (e) {
+    renderItems(resultsList, [], `Search failed: ${e.message}`);
+  } finally {
+    if (searchBtn) searchBtn.disabled = false;
   }
-
-  captureBtn.disabled = false;
-  captureBtn.textContent = 'Capture';
-});
-
-searchBtn.addEventListener('click', performSearch);
-searchInput.addEventListener('keydown', event => {
-  if (event.key === 'Enter') {
-    performSearch();
-  }
-});
-
-refreshTimeline();
-
-// Auth helpers
-async function setTokenInBackground(token) {
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'auth-set-token', token }, () => resolve());
-  });
-}
-
-async function clearTokenInBackground() {
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'auth-clear-token' }, () => resolve());
-  });
 }
 
 async function login() {
@@ -217,9 +207,34 @@ async function init() {
 }
 
 // --- EVENT LISTENERS ---
-captureBtn.addEventListener('click', captureTab);
-searchBtn.addEventListener('click', performSearch);
-loginBtn.addEventListener('click', login);
-logoutBtn.addEventListener('click', logout);
+if (captureBtn) captureBtn.addEventListener('click', captureTab);
+if (searchBtn) searchBtn.addEventListener('click', performSearch);
+if (searchInput) {
+  searchInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') performSearch();
+  });
+}
+if (loginBtn) loginBtn.addEventListener('click', login);
+if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+if (addExcludeBtn) {
+  addExcludeBtn.addEventListener('click', () => {
+    const keyword = excludeInput.value.trim();
+    if (keyword && !excludedKeywords.includes(keyword)) {
+      excludedKeywords.push(keyword);
+      excludeInput.value = '';
+      renderExclusions();
+      performSearch();
+    }
+  });
+}
+if (excludeInput) {
+  excludeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      addExcludeBtn.click();
+    }
+  });
+}
 
 init();
+

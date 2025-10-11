@@ -242,12 +242,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.addEventListener('click', (evt) => {
-    const dropdownProfile = profile ? profile.querySelector('.profile-link') : null;
-    if (profile && dropdownProfile?.classList.contains('show') && !profile.contains(evt.target)) {
-      dropdownProfile.classList.remove('show');
+  async function loadFavorites() {
+    try {
+      // We'll assume a new API endpoint for favorites
+      const data = await fetchJson('/api/favorites?limit=15');
+      const favoritesList = document.getElementById('favoritesList');
+      renderList(favoritesList, data.items, 'No favorites found.');
+      setupSlider('favorites'); // This activates the slider
+    } catch (error) {
+      renderList(favoritesList, [], `Favorites error: ${error.message}`);
     }
-  });
-
+  }
+  
   init();
 });
