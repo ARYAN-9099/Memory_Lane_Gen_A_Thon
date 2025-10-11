@@ -18,14 +18,14 @@
         <a href="#" class="brand"><span>MemoryLane.ai</span></a>
         <ul class="side-menu">
             <li>
-                <a class="active" href="/">
+                <a class="active" href="#" id="dashboardLink">
                     <i class="fa-solid fa-paperclip icon"></i>
                     <span class="label">Dashboard</span>
                 </a>
             </li>
             <li class="divider" data-text="main">Main</li>
             <li>
-                <a href="/">
+                <a href="#" id="analysisLink">
                     <i class="fa-solid fa-chart-simple icon"></i>
                     <span class="label">Analysis</span>
                 </a>
@@ -148,23 +148,87 @@
                     </div>
                 </section>
 
-                <section class="slider-section" id="favoritesSection">
+                <section class="slider-section" id="websiteAnalyticsSection">
                     <div class="slider-header">
-                        <h2>Favorites</h2>
-                        <div class="slider-nav">
-                            <button class="slider-btn prev" id="favorites-prev" title="Previous Favorites"><i
-                                    class="fa-solid fa-chevron-left"></i></button>
-                            <button class="slider-btn next" id="favorites-next" title="Next Favorites"><i
-                                    class="fa-solid fa-chevron-right"></i></button>
-                        </div>
+                        <h2>Website Analytics</h2>
                     </div>
-                    <div class="slider-window">
-                        <div class="slider-track" id="favoritesList">
+                    <div class="analytics-container">
+                        <div class="analytics-chart">
+                            <canvas id="websiteChart"></canvas>
+                        </div>
+                        <div class="analytics-top">
+                            <h3>Top 5 Most Visited</h3>
+                            <div id="topWebsites">
+                                <p class="muted">Loading...</p>
+                            </div>
                         </div>
                     </div>
                 </section>
 
             </div>
+
+            <!-- Analysis Page Overlay -->
+            <div id="analysisPage" class="page-overlay" style="display: none;">
+                <div class="page-header">
+                    <h1>Analysis Dashboard</h1>
+                    <p class="subtitle">Comprehensive insights and detailed timeline of your browsing activity</p>
+                </div>
+                
+                <div class="analysis-content">
+                    <!-- Summary Cards -->
+                    <div class="summary-section" id="summaryCards">
+                        <!-- Will be populated by JS -->
+                    </div>
+
+                    <!-- Detailed Timeline -->
+                    <section class="timeline-section">
+                        <h2>Detailed Activity Timeline</h2>
+                        <div class="timeline-list" id="detailedTimeline">
+                            <p class="muted">Loading timeline...</p>
+                        </div>
+                    </section>
+
+                    <!-- Charts Grid -->
+                    <div class="charts-grid">
+                        <div class="analysis-card">
+                            <h2>Top 7 Most Used Keywords</h2>
+                            <div class="chart-container">
+                                <canvas id="analysisKeywordsChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="analysis-card">
+                            <h2>Website Distribution</h2>
+                            <div class="chart-container">
+                                <canvas id="analysisWebsiteChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="analysis-card">
+                            <h2>Emotion Patterns</h2>
+                            <div class="chart-container">
+                                <canvas id="analysisEmotionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="analysis-card">
+                            <h2>Hourly Activity</h2>
+                            <div class="chart-container">
+                                <canvas id="analysisHourlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Insights & Conclusions -->
+                    <section class="insights-section">
+                        <h2>Key Insights & Summary</h2>
+                        <div class="insights-grid" id="insightsContent">
+                            <p class="muted">Analyzing patterns...</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
             <div class="footer">
                 <small>Extension captures sync live. Keep the API running on http://localhost:5000.</small>
             </div>
