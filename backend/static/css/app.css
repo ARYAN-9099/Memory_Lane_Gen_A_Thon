@@ -1190,7 +1190,7 @@ footer {
 /* Analysis Page Overlay */
 .page-overlay {
   position: absolute;
-  top: -10rem;
+  /* top: -10rem; */
   left: 0;
   right: 0;
   width: calc(100% - 4rem);
