@@ -31,15 +31,15 @@
                 </a>
             </li>
             <li>
-                <a href="/">
-                    <i class="fa-solid fa-chart-pie icon"></i>
-                    <span class="label">Charts</span>
+                <a href="#" id="tablesLink">
+                    <i class="fa-solid fa-table icon"></i>
+                    <span class="label">Tables</span>
                 </a>
             </li>
             <li>
-                <a href="/">
-                    <i class="fa-solid fa-table icon"></i>
-                    <span class="label">Tables</span>
+                <a href="/export">
+                    <i class="fa-solid fa-chart-pie icon"></i>
+                    <span class="label">Export PDF</span>
                 </a>
             </li>
             <li>
@@ -237,6 +237,127 @@
                         <h2>Key Insights & Summary</h2>
                         <div class="insights-grid" id="insightsContent">
                             <p class="muted">Analyzing patterns...</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Tables Page Overlay -->
+            <div id="tablesPage" class="page-overlay" style="display: none;">
+                <div class="page-header">
+                    <h1>Data Tables</h1>
+                    <p class="subtitle">Detailed tabular view of all your captured memories and browsing data</p>
+                </div>
+                
+                <div class="analysis-content">
+                    <!-- All Captures Table -->
+                    <section class="table-section">
+                        <div class="table-header">
+                            <h2><i class="fa-solid fa-database"></i> All Captures</h2>
+                            <div class="table-actions">
+                                <input type="text" id="tableSearchInput" placeholder="Search in table..." class="table-search-input">
+                                <button class="primary" id="exportCsvBtn"><i class="fa-solid fa-download"></i> Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="allCapturesTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Title</th>
+                                        <th>Source</th>
+                                        <th>Emotion</th>
+                                        <th>Keywords</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allCapturesTableBody">
+                                    <tr>
+                                        <td colspan="7" class="loading-cell">Loading data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination" id="tablePagination">
+                            <button class="ghost" id="prevPage"><i class="fa-solid fa-chevron-left"></i> Previous</button>
+                            <span id="pageInfo">Page 1 of 1</span>
+                            <button class="ghost" id="nextPage">Next <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                    </section>
+
+                    <!-- Summary Statistics Table -->
+                    <section class="table-section">
+                        <div class="table-header">
+                            <h2><i class="fa-solid fa-chart-bar"></i> Website Statistics</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table stats-table" id="websiteStatsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Website</th>
+                                        <th>Visits</th>
+                                        <th>Percentage</th>
+                                        <th>Most Common Emotion</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="websiteStatsTableBody">
+                                    <tr>
+                                        <td colspan="5" class="loading-cell">Loading statistics...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Keywords Frequency Table -->
+                    <section class="table-section">
+                        <div class="table-header">
+                            <h2><i class="fa-solid fa-tags"></i> Top Keywords</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table stats-table" id="keywordsStatsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Keyword</th>
+                                        <th>Frequency</th>
+                                        <th>Percentage</th>
+                                        <th>First Seen</th>
+                                        <th>Last Seen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="keywordsStatsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="loading-cell">Loading keywords...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Emotion Distribution Table -->
+                    <section class="table-section">
+                        <div class="table-header">
+                            <h2><i class="fa-solid fa-face-smile"></i> Emotion Distribution</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table stats-table" id="emotionStatsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Emotion</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                        <th>Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emotionStatsTableBody">
+                                    <tr>
+                                        <td colspan="4" class="loading-cell">Loading emotions...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </section>
                 </div>

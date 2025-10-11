@@ -197,13 +197,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Page Navigation Functions ---
   const dashContent = document.getElementById('dash-content');
   const analysisPage = document.getElementById('analysisPage');
+  const tablesPage = document.getElementById('tablesPage');
   const dashboardLink = document.getElementById('dashboardLink');
   const analysisLink = document.getElementById('analysisLink');
+  const tablesLink = document.getElementById('tablesLink');
   const footer = document.querySelector('.footer');
 
   function showDashboard() {
     if (dashContent) dashContent.style.display = 'block';
     if (analysisPage) analysisPage.style.display = 'none';
+    if (tablesPage) tablesPage.style.display = 'none';
     if (footer) footer.style.display = 'block';
     
     // Update active state
@@ -217,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function showAnalysis() {
     if (dashContent) dashContent.style.display = 'none';
     if (analysisPage) analysisPage.style.display = 'block';
+    if (tablesPage) tablesPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -230,6 +234,23 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAnalysisData();
   }
 
+  function showTables() {
+    if (dashContent) dashContent.style.display = 'none';
+    if (analysisPage) analysisPage.style.display = 'none';
+    if (tablesPage) tablesPage.style.display = 'block';
+    if (footer) footer.style.display = 'none';
+    
+    // Update active state
+    document.querySelectorAll('.side-menu a').forEach(a => a.classList.remove('active'));
+    if (tablesLink) tablesLink.classList.add('active');
+    
+    // Save state
+    localStorage.setItem('currentPage', 'tables');
+    
+    // Load tables data
+    loadTablesData();
+  }
+
   if (dashboardLink) {
     dashboardLink.addEventListener('click', (e) => {
       e.preventDefault();
@@ -241,6 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
     analysisLink.addEventListener('click', (e) => {
       e.preventDefault();
       showAnalysis();
+    });
+  }
+
+  if (tablesLink) {
+    tablesLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showTables();
     });
   }
 
@@ -1059,6 +1087,330 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // --- Tables Page Functions ---
+  let currentPage = 1;
+  let itemsPerPage = 15;
+  let allTableData = [];
+  let filteredTableData = [];
+
+  async function loadTablesData() {
+    try {
+      const data = await fetchJson('/timeline?limit=1000');
+      allTableData = data.items || [];
+      filteredTableData = [...allTableData];
+      
+      renderAllCapturesTable();
+      renderWebsiteStatsTable();
+      renderKeywordsStatsTable();
+      renderEmotionStatsTable();
+      
+      setupTableSearch();
+      setupPagination();
+      setupExportCSV();
+    } catch (error) {
+      console.error('Failed to load tables data:', error);
+    }
+  }
+
+  function renderAllCapturesTable() {
+    const tbody = document.getElementById('allCapturesTableBody');
+    if (!tbody) return;
+
+    if (filteredTableData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="loading-cell">No data available</td></tr>';
+      return;
+    }
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageData = filteredTableData.slice(startIndex, endIndex);
+
+    tbody.innerHTML = pageData.map((item, index) => {
+      const date = new Date(item.createdAt);
+      const dateStr = date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const keywords = (item.keywords || []).slice(0, 3).map(kw => 
+        `<span class="table-badge keyword">${kw}</span>`
+      ).join('');
+
+      return `
+        <tr>
+          <td>${startIndex + index + 1}</td>
+          <td><strong>${item.title || 'Untitled'}</strong></td>
+          <td>${item.source || 'Unknown'}</td>
+          <td>${item.emotion ? `<span class="table-badge emotion">${item.emotion}</span>` : '-'}</td>
+          <td>${keywords || '-'}</td>
+          <td>${dateStr}</td>
+          <td>
+            <button class="table-action-btn" onclick="window.open('${item.url}', '_blank')" title="Visit URL">
+              <i class="fa-solid fa-external-link-alt"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    updatePaginationInfo();
+  }
+
+  function renderWebsiteStatsTable() {
+    const tbody = document.getElementById('websiteStatsTableBody');
+    if (!tbody) return;
+
+    // Count websites
+    const websiteCounts = {};
+    const websiteEmotions = {};
+    
+    allTableData.forEach(item => {
+      const source = item.source || 'Unknown';
+      websiteCounts[source] = (websiteCounts[source] || 0) + 1;
+      
+      if (item.emotion) {
+        if (!websiteEmotions[source]) websiteEmotions[source] = {};
+        websiteEmotions[source][item.emotion] = (websiteEmotions[source][item.emotion] || 0) + 1;
+      }
+    });
+
+    const sortedWebsites = Object.entries(websiteCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    const total = sortedWebsites.reduce((sum, [, count]) => sum + count, 0);
+
+    tbody.innerHTML = sortedWebsites.map(([website, count], index) => {
+      const percentage = ((count / total) * 100).toFixed(1);
+      
+      // Get most common emotion for this website
+      const emotions = websiteEmotions[website] || {};
+      const mostCommonEmotion = Object.entries(emotions)
+        .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+      return `
+        <tr>
+          <td><span class="rank-badge">${index + 1}</span></td>
+          <td><strong>${website}</strong></td>
+          <td>${count}</td>
+          <td>
+            <div class="percentage-bar">
+              <div class="bar">
+                <div class="bar-fill" style="width: ${percentage}%"></div>
+              </div>
+              <span class="bar-text">${percentage}%</span>
+            </div>
+          </td>
+          <td><span class="table-badge emotion">${mostCommonEmotion}</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderKeywordsStatsTable() {
+    const tbody = document.getElementById('keywordsStatsTableBody');
+    if (!tbody) return;
+
+    // Count keywords and track first/last seen
+    const keywordData = {};
+    
+    allTableData.forEach(item => {
+      if (item.keywords && Array.isArray(item.keywords)) {
+        const date = new Date(item.createdAt);
+        item.keywords.forEach(keyword => {
+          if (!keywordData[keyword]) {
+            keywordData[keyword] = {
+              count: 0,
+              firstSeen: date,
+              lastSeen: date
+            };
+          }
+          keywordData[keyword].count++;
+          if (date < keywordData[keyword].firstSeen) keywordData[keyword].firstSeen = date;
+          if (date > keywordData[keyword].lastSeen) keywordData[keyword].lastSeen = date;
+        });
+      }
+    });
+
+    const sortedKeywords = Object.entries(keywordData)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 15);
+
+    const totalKeywords = sortedKeywords.reduce((sum, [, data]) => sum + data.count, 0);
+
+    tbody.innerHTML = sortedKeywords.map(([keyword, data], index) => {
+      const percentage = ((data.count / totalKeywords) * 100).toFixed(1);
+      const firstSeen = data.firstSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const lastSeen = data.lastSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      return `
+        <tr>
+          <td><span class="rank-badge">${index + 1}</span></td>
+          <td><strong>${keyword}</strong></td>
+          <td>${data.count}</td>
+          <td>
+            <div class="percentage-bar">
+              <div class="bar">
+                <div class="bar-fill" style="width: ${percentage}%"></div>
+              </div>
+              <span class="bar-text">${percentage}%</span>
+            </div>
+          </td>
+          <td>${firstSeen}</td>
+          <td>${lastSeen}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderEmotionStatsTable() {
+    const tbody = document.getElementById('emotionStatsTableBody');
+    if (!tbody) return;
+
+    // Count emotions
+    const emotionCounts = {};
+    
+    allTableData.forEach(item => {
+      if (item.emotion) {
+        emotionCounts[item.emotion] = (emotionCounts[item.emotion] || 0) + 1;
+      }
+    });
+
+    const sortedEmotions = Object.entries(emotionCounts)
+      .sort((a, b) => b[1] - a[1]);
+
+    const total = sortedEmotions.reduce((sum, [, count]) => sum + count, 0);
+
+    tbody.innerHTML = sortedEmotions.map(([emotion, count]) => {
+      const percentage = ((count / total) * 100).toFixed(1);
+      const trend = count > (total / sortedEmotions.length) ? 'up' : count < (total / sortedEmotions.length) ? 'down' : 'stable';
+      const trendIcon = trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️';
+
+      return `
+        <tr>
+          <td><span class="table-badge emotion">${emotion}</span></td>
+          <td><strong>${count}</strong></td>
+          <td>
+            <div class="percentage-bar">
+              <div class="bar">
+                <div class="bar-fill" style="width: ${percentage}%"></div>
+              </div>
+              <span class="bar-text">${percentage}%</span>
+            </div>
+          </td>
+          <td><span class="trend-indicator ${trend}">${trendIcon} ${trend}</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function setupTableSearch() {
+    const searchInput = document.getElementById('tableSearchInput');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      
+      if (query === '') {
+        filteredTableData = [...allTableData];
+      } else {
+        filteredTableData = allTableData.filter(item => {
+          return (item.title || '').toLowerCase().includes(query) ||
+                 (item.source || '').toLowerCase().includes(query) ||
+                 (item.emotion || '').toLowerCase().includes(query) ||
+                 (item.keywords || []).some(kw => kw.toLowerCase().includes(query));
+        });
+      }
+      
+      currentPage = 1;
+      renderAllCapturesTable();
+    });
+  }
+
+  function setupPagination() {
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderAllCapturesTable();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredTableData.length / itemsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderAllCapturesTable();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    }
+  }
+
+  function updatePaginationInfo() {
+    const pageInfo = document.getElementById('pageInfo');
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+    
+    const totalPages = Math.ceil(filteredTableData.length / itemsPerPage);
+    
+    if (pageInfo) {
+      pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+    
+    if (prevBtn) {
+      prevBtn.disabled = currentPage === 1;
+    }
+    
+    if (nextBtn) {
+      nextBtn.disabled = currentPage >= totalPages;
+    }
+  }
+
+  function setupExportCSV() {
+    const exportBtn = document.getElementById('exportCsvBtn');
+    if (!exportBtn) return;
+
+    exportBtn.addEventListener('click', () => {
+      // Create CSV content
+      const headers = ['#', 'Title', 'Source', 'URL', 'Emotion', 'Keywords', 'Date'];
+      const rows = filteredTableData.map((item, index) => [
+        index + 1,
+        `"${(item.title || 'Untitled').replace(/"/g, '""')}"`,
+        `"${(item.source || 'Unknown').replace(/"/g, '""')}"`,
+        `"${(item.url || '').replace(/"/g, '""')}"`,
+        item.emotion || '-',
+        `"${(item.keywords || []).join(', ').replace(/"/g, '""')}"`,
+        new Date(item.createdAt).toLocaleString()
+      ]);
+
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      // Create download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `memory-lane-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
+  }
+
   // --- Initialization and Event Listeners ---
   async function init() {
     try {
@@ -1076,6 +1428,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedPage = localStorage.getItem('currentPage');
     if (savedPage === 'analysis') {
       showAnalysis();
+    } else if (savedPage === 'tables') {
+      showTables();
     } else {
       showDashboard();
     }

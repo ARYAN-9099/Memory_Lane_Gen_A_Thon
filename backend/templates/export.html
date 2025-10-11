@@ -17,7 +17,7 @@
         }
 
         .export-card {
-            background: var(--light);
+            background: white;
             border-radius: 12px;
             padding: 2rem;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -107,7 +107,7 @@
 
         .btn-back {
             background: var(--grey);
-            color: white;
+            color: rgb(0, 0, 0);
             border: none;
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
@@ -173,6 +173,10 @@
             color: #0c5460;
             display: block;
         }
+
+        .export-header h1 {
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 
@@ -181,28 +185,34 @@
         <a href="#" class="brand"><span>MemoryLane.ai</span></a>
         <ul class="side-menu">
             <li>
-                <a href="/">
+                <a class="active" href="#" id="dashboardLink">
                     <i class="fa-solid fa-paperclip icon"></i>
                     <span class="label">Dashboard</span>
                 </a>
             </li>
             <li class="divider" data-text="main">Main</li>
             <li>
-                <a href="/analysis">
+                <a href="#" id="analysisLink">
                     <i class="fa-solid fa-chart-simple icon"></i>
                     <span class="label">Analysis</span>
                 </a>
             </li>
             <li>
-                <a href="/inventory">
-                    <i class="fa-solid fa-boxes-stacked icon"></i>
-                    <span class="label">Inventory</span>
+                <a href="#" id="tablesLink">
+                    <i class="fa-solid fa-table icon"></i>
+                    <span class="label">Tables</span>
                 </a>
             </li>
             <li>
                 <a class="active" href="/export">
                     <i class="fa-solid fa-download icon"></i>
                     <span class="label">Export Data</span>
+                </a>
+            </li>
+            <li>
+                <a href="/">
+                    <i class="fa-solid fa-comment icon"></i>
+                    <span class="label">Suggestions</span>
                 </a>
             </li>
             <li class="divider" data-text="OTHER">Other</li>
