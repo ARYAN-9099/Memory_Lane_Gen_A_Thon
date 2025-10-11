@@ -98,6 +98,13 @@ def create_app(database_path: Path | None = None) -> Flask:
             return redirect(url_for("login_page"))
         return render_template("export.html")
 
+    @app.route("/chatbot", methods=["GET"])
+    def chatbot_page():
+        # Require login: if no session, redirect to login page
+        if not session.get("user_id"):
+            return redirect(url_for("login_page"))
+        return render_template("chatbot.html")
+
     return app
 
 
