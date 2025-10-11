@@ -10,3 +10,5 @@ google-generativeai
 python-dotenv
 reportlab==4.0.7
 ollama
+sentence-transformers==2.2.2
+numpy

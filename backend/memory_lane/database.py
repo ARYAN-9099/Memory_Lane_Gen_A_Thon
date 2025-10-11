@@ -9,6 +9,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Generator
 
+# Try to import sentence-transformers for semantic search
+try:
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
+    SEMANTIC_SEARCH_AVAILABLE = True
+    # Initialize model lazily
+    _semantic_model = None
+    # Cache for tag embeddings to speed up repeated searches
+    _tag_embeddings_cache = {}
+except ImportError:
+    SEMANTIC_SEARCH_AVAILABLE = False
+    _semantic_model = None
+    _tag_embeddings_cache = {}
+
 
 @dataclass
 class Item:
@@ -160,7 +174,7 @@ class Database:
         processed: bool = True,
         processing_error: str | None = None,
     ) -> Item:
-        created_at = datetime.utcnow().isoformat()
+        created_at = datetime.now().isoformat()
         payload = (
             user_id,
             url,
@@ -226,6 +240,79 @@ class Database:
             row = cur.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
             return Item.from_row(row) if row else None
 
+    def _get_semantic_model(self):
+        """Lazy load semantic model."""
+        global _semantic_model
+        if SEMANTIC_SEARCH_AVAILABLE and _semantic_model is None:
+            try:
+                _semantic_model = SentenceTransformer('all-MiniLM-L6-v2')
+            except Exception:
+                pass
+        return _semantic_model
+
+    def _find_similar_tags(self, query: str, user_id: int, threshold: float = 0.5) -> set[str]:
+        """Find tags semantically similar to the query using sentence embeddings."""
+        if not SEMANTIC_SEARCH_AVAILABLE:
+            return set()
+        
+        try:
+            model = self._get_semantic_model()
+            if model is None:
+                return set()
+            
+            # Create cache key
+            cache_key = f"user_{user_id}"
+            
+            # Check if we have cached embeddings for this user
+            if cache_key not in _tag_embeddings_cache:
+                # Get all unique tags for this user
+                with self._get_connection() as conn:
+                    rows = conn.execute(
+                        """
+                        SELECT DISTINCT t.tag 
+                        FROM tags t 
+                        JOIN items i ON t.item_id = i.id 
+                        WHERE i.user_id = ?
+                        """,
+                        (user_id,)
+                    ).fetchall()
+                
+                if not rows:
+                    return set()
+                
+                all_tags = [row['tag'] for row in rows]
+                
+                # Encode and cache
+                tag_embeddings = model.encode(all_tags)
+                _tag_embeddings_cache[cache_key] = {
+                    'tags': all_tags,
+                    'embeddings': tag_embeddings
+                }
+            
+            # Get cached data
+            cached = _tag_embeddings_cache[cache_key]
+            all_tags = cached['tags']
+            tag_embeddings = cached['embeddings']
+            
+            # Encode query
+            query_embedding = model.encode([query])[0]
+            
+            # Calculate cosine similarities
+            similarities = np.dot(tag_embeddings, query_embedding) / (
+                np.linalg.norm(tag_embeddings, axis=1) * np.linalg.norm(query_embedding)
+            )
+            
+            # Get tags above threshold
+            similar_tags = set()
+            for tag, similarity in zip(all_tags, similarities):
+                if similarity >= threshold:
+                    similar_tags.add(tag.lower())
+            
+            return similar_tags
+        except Exception as e:
+            print(f"Semantic search error: {e}")
+            return set()
+
     # In memory_lane/database.py
 
     def search_items(
@@ -234,8 +321,20 @@ class Database:
         query: str | None = None,
         emotion: str | None = None,
         limit: int = 25,
-    ) -> list[Item]:
-        """Search items using a proper JOIN on the tags table for efficiency."""
+        use_semantic: bool = False,
+    ) -> tuple[list[Item], bool]:
+        """Search items using a proper JOIN on the tags table with optional semantic tag matching.
+        
+        Args:
+            user_id: The user's ID
+            query: Search query string
+            emotion: Filter by emotion
+            limit: Maximum number of results
+            use_semantic: Whether to use semantic search (default: False for speed)
+        
+        Returns:
+            tuple: (list of items, whether semantic search was used)
+        """
         
         # Start with the base query joining items and tags
         # We use DISTINCT to avoid getting duplicate items if they match multiple tags
@@ -245,15 +344,40 @@ class Database:
             "WHERE i.user_id = ?"
         ]
         params: list[Any] = [user_id]
+        semantic_used = False
 
         if query:
             query_lower = query.lower()
-            # The search now includes the properly indexed t.tag column
-            sql_parts.append(
-                "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ?)"
-            )
-            like_query = f"%{query_lower}%"
-            params.extend([like_query, like_query, like_query])
+            
+            # Only use semantic search if explicitly requested
+            if use_semantic:
+                # Find semantically similar tags
+                similar_tags = self._find_similar_tags(query, user_id, threshold=0.5)
+                
+                if similar_tags:
+                    semantic_used = True
+                    # Build condition for semantic tags
+                    tag_conditions = " OR ".join(["LOWER(t.tag) = ?" for _ in similar_tags])
+                    sql_parts.append(
+                        f"AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ? OR ({tag_conditions}))"
+                    )
+                    like_query = f"%{query_lower}%"
+                    params.extend([like_query, like_query, like_query])
+                    params.extend(list(similar_tags))
+                else:
+                    # Fallback to regular search if no similar tags found
+                    sql_parts.append(
+                        "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ?)"
+                    )
+                    like_query = f"%{query_lower}%"
+                    params.extend([like_query, like_query, like_query])
+            else:
+                # Regular search without semantic matching (faster)
+                sql_parts.append(
+                    "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ?)"
+                )
+                like_query = f"%{query_lower}%"
+                params.extend([like_query, like_query, like_query])
 
         if emotion:
             emotion_lower = emotion.lower()
@@ -267,7 +391,7 @@ class Database:
 
         with self._get_connection() as conn:
             rows = conn.execute(final_sql, params).fetchall()
-            return [Item.from_row(row) for row in rows]
+            return [Item.from_row(row) for row in rows], semantic_used
 
     def get_item(self, user_id: int, item_id: int) -> Item | None:
         with self._get_connection() as conn:
@@ -336,7 +460,7 @@ class Database:
 
     # User helpers
     def create_user(self, email: str, password_hash: str, api_token: str) -> int:
-        created_at = datetime.utcnow().isoformat()
+        created_at = datetime.now().isoformat()
         with self._get_connection() as conn:
             cur = conn.cursor()
             cur.execute(

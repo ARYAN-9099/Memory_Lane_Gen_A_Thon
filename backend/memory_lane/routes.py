@@ -121,9 +121,19 @@ def register_routes(app: Flask, database: Database) -> None:
             return jsonify({"error": "Unauthorized"}), 401
         query = request.args.get("q")
         emotion = request.args.get("emotion")
+        use_semantic = request.args.get("semantic", "").lower() == "true"
         limit = int(request.args.get("limit", 25))
-        items = database.search_items(user_id=int(user["id"]), query=query, emotion=emotion, limit=limit)
-        return jsonify({"results": [item.to_dict() for item in items]})
+        items, semantic_used = database.search_items(
+            user_id=int(user["id"]), 
+            query=query, 
+            emotion=emotion, 
+            limit=limit,
+            use_semantic=use_semantic
+        )
+        return jsonify({
+            "results": [item.to_dict() for item in items],
+            "semanticSearchUsed": semantic_used
+        })
 
     @api.route("/items/<int:item_id>", methods=["GET"])
     def get_item(item_id: int):
@@ -143,6 +153,22 @@ def register_routes(app: Flask, database: Database) -> None:
         limit = int(request.args.get("limit", 20))
         items = database.list_recent(user_id=int(user["id"]), limit=limit)
         return jsonify({"items": [item.to_dict() for item in items]})
+
+    @api.route("/processing-status", methods=["GET"])
+    def processing_status():
+        """Check if there are any items currently being processed."""
+        user = _require_user()
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        
+        # Check if there are unprocessed items
+        items, _ = database.search_items(user_id=int(user["id"]), limit=1000)
+        unprocessed_count = sum(1 for item in items if not item.processed)
+        
+        return jsonify({
+            "processing": unprocessed_count > 0,
+            "count": unprocessed_count
+        })
 
     @api.route("/insights", methods=["GET"])
     def insights():
@@ -229,7 +255,7 @@ def register_routes(app: Flask, database: Database) -> None:
         
         try:
             # Get all user items (no limit)
-            items = database.search_items(user_id=int(user["id"]), limit=10000)
+            items, _ = database.search_items(user_id=int(user["id"]), limit=10000)
             insights = database.get_insights(user_id=int(user["id"]))
             
             # Convert items to dicts

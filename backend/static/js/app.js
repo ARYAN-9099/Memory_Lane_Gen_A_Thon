@@ -4,8 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Element Selectors ---
   const apiStatus = document.getElementById('apiStatus');
+  const processingStatus = document.getElementById('processingStatus');
   const searchInput = document.getElementById('searchInput');
   const emotionSelect = document.getElementById('emotionSelect');
+  const semanticToggle = document.getElementById('semanticToggle');
   const searchBtn = document.getElementById('searchBtn');
   const resetBtn = document.getElementById('resetBtn');
   const timelineList = document.getElementById('timelineList');
@@ -41,6 +43,28 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus('API connected', 'info');
       } catch (error) {
         setStatus('API disconnected', 'error');
+      }
+    }, intervalMs);
+  }
+
+  function startProcessingCheck(intervalMs = 3000) {
+    setInterval(async () => {
+      try {
+        const data = await fetchJson('/processing-status');
+        if (data.processing) {
+          if (processingStatus) {
+            processingStatus.style.display = 'inline-block';
+          }
+        } else {
+          if (processingStatus) {
+            processingStatus.style.display = 'none';
+          }
+        }
+      } catch (error) {
+        // Silently handle error - processing status is not critical
+        if (processingStatus) {
+          processingStatus.style.display = 'none';
+        }
       }
     }, intervalMs);
   }
@@ -116,11 +140,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams();
     const query = searchInput.value.trim();
     const emotion = emotionSelect.value;
+    const useSemantic = semanticToggle && semanticToggle.checked;
+    
     if (query) params.set('q', query);
     if (emotion) params.set('emotion', emotion);
+    if (useSemantic) params.set('semantic', 'true');
+    
     try {
       const data = await fetchJson(`/search?${params.toString()}`);
-      if (resultsCount) resultsCount.textContent = `(${data.results.length} matches)`;
+      const resultCount = data.results.length;
+      const semanticNote = data.semanticSearchUsed ? ' 🔍 (including similar tags)' : '';
+      if (resultsCount) resultsCount.textContent = `(${resultCount} matches${semanticNote})`;
       renderList(resultsList, data.results, 'No results found.');
       setupSlider('results');
     } catch (error) {
@@ -1035,6 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setStatus('API disconnected', 'error');
     }
     startHealthCheck();
+    startProcessingCheck();
     loadTimeline();
     performSearch();
     
@@ -1052,6 +1083,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetBtn.addEventListener('click', () => {
       if (searchInput) searchInput.value = '';
       if (emotionSelect) emotionSelect.value = '';
+      if (semanticToggle) semanticToggle.checked = false;
       performSearch();
     });
   }
