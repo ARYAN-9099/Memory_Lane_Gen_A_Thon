@@ -198,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashContent = document.getElementById('dash-content');
   const analysisPage = document.getElementById('analysisPage');
   const tablesPage = document.getElementById('tablesPage');
+  const exportPage = document.getElementById('exportPage');
   const dashboardLink = document.getElementById('dashboardLink');
   const analysisLink = document.getElementById('analysisLink');
   const tablesLink = document.getElementById('tablesLink');
@@ -207,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dashContent) dashContent.style.display = 'block';
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'none';
     if (footer) footer.style.display = 'block';
     
     // Update active state
@@ -221,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dashContent) dashContent.style.display = 'none';
     if (analysisPage) analysisPage.style.display = 'block';
     if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -238,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dashContent) dashContent.style.display = 'none';
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'block';
+    if (exportPage) exportPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -1430,6 +1434,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showAnalysis();
     } else if (savedPage === 'tables') {
       showTables();
+    } else if (savedPage === 'export') {
+      showExport();
     } else {
       showDashboard();
     }
@@ -1667,6 +1673,114 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // --- Export Page Functions ---
+  const exportLink = document.getElementById('exportLink');
+  const exportBtn = document.getElementById('exportBtn');
+
+  function showExport() {
+    if (dashContent) dashContent.style.display = 'none';
+    if (analysisPage) analysisPage.style.display = 'none';
+    if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'block';
+    if (footer) footer.style.display = 'none';
+    
+    // Update active state
+    document.querySelectorAll('.side-menu a').forEach(a => a.classList.remove('active'));
+    if (exportLink) exportLink.classList.add('active');
+    
+    // Save state
+    localStorage.setItem('currentPage', 'export');
+    
+    // Load export insights
+    loadExportInsights();
+  }
+
+  if (exportLink) {
+    exportLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showExport();
+    });
+  }
+
+  // Load insights for export page
+  async function loadExportInsights() {
+    try {
+      const response = await fetch(`${API_BASE}/insights`);
+      if (!response.ok) {
+        throw new Error('Failed to load insights');
+      }
+      const data = await response.json();
+      
+      const totalItemsEl = document.getElementById('totalItems');
+      const totalEmotionsEl = document.getElementById('totalEmotions');
+      const totalTagsEl = document.getElementById('totalTags');
+      
+      if (totalItemsEl) totalItemsEl.textContent = data.totalItems || 0;
+      if (totalEmotionsEl) totalEmotionsEl.textContent = Object.keys(data.byEmotion || {}).length;
+      if (totalTagsEl) totalTagsEl.textContent = (data.topTags || []).length;
+    } catch (error) {
+      console.error('Error loading insights:', error);
+      showExportStatus('Unable to load statistics', 'error');
+    }
+  }
+
+  // Handle export button click
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+      
+      showExportStatus('Generating your PDF export... This may take a moment.', 'loading');
+
+      try {
+        const response = await fetch(`${API_BASE}/export/pdf`);
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate PDF');
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `memory_lane_export_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showExportStatus('PDF downloaded successfully!', 'success');
+      } catch (error) {
+        console.error('Export error:', error);
+        showExportStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download PDF Report';
+      }
+    });
+  }
+
+  function showExportStatus(message, type) {
+    const statusEl = document.getElementById('exportStatusMessage');
+    if (statusEl) {
+      statusEl.className = `status-message ${type}`;
+      statusEl.textContent = message;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          statusEl.className = 'status-message';
+        }, 5000);
+      }
+    }
+  }
+
   init();
   loadWebsiteAnalytics();
 });

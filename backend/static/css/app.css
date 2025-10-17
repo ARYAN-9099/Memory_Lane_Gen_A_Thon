@@ -1768,3 +1768,200 @@ footer {
   color: #a5b4fc;
 }
 
+/* ==================== Export Page Overlay Styles ==================== */
+.export-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.export-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.export-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.export-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--dark);
+}
+
+.export-header p {
+  color: var(--grey);
+  font-size: 1rem;
+}
+
+.export-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.info-box {
+  background: var(--light-blue);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.info-box .value {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--blue);
+  display: block;
+}
+
+.info-box .label {
+  font-size: 0.9rem;
+  color: var(--grey);
+  margin-top: 0.5rem;
+}
+
+.export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btn-export {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-width: 250px;
+  justify-content: center;
+}
+
+.btn-export:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-export:active {
+  transform: translateY(0);
+}
+
+.btn-export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.export-features {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--grey);
+}
+
+.export-features h3 {
+  margin-bottom: 1rem;
+  color: var(--dark);
+}
+
+.export-features ul {
+  list-style: none;
+  padding: 0;
+}
+
+.export-features li {
+  padding: 0.5rem 0;
+  color: var(--grey);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-features li i {
+  color: var(--blue);
+}
+
+.status-message {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  display: none;
+}
+
+.status-message.success {
+  background: #d4edda;
+  color: #155724;
+  display: block;
+}
+
+.status-message.error {
+  background: #f8d7da;
+  color: #721c24;
+  display: block;
+}
+
+.status-message.loading {
+  background: #d1ecf1;
+  color: #0c5460;
+  display: block;
+}
+
+.export-header h1 {
+  margin-bottom: 1rem;
+}
+
+/* Dark theme support for export overlay */
+[data-theme="dark"] .export-card {
+  background: var(--card-color);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .export-header h1 {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .export-header p {
+  color: var(--d-gray-color);
+}
+
+[data-theme="dark"] .info-box {
+  background: var(--bg-color);
+}
+
+[data-theme="dark"] .info-box .value {
+  color: var(--accent);
+}
+
+[data-theme="dark"] .info-box .label {
+  color: var(--d-gray-color);
+}
+
+[data-theme="dark"] .export-features {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .export-features h3 {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .export-features li {
+  color: var(--d-gray-color);
+}
+
+[data-theme="dark"] .export-features li i {
+  color: var(--accent);
+}
+/* ==================== End Export Page Overlay Styles ==================== */
+

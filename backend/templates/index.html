@@ -37,7 +37,7 @@
                 </a>
             </li>
             <li>
-                <a href="/export">
+                <a href="#" id="exportLink">
                     <i class="fa-solid fa-chart-pie icon"></i>
                     <span class="label">Export PDF</span>
                 </a>
@@ -360,6 +360,54 @@
                             </table>
                         </div>
                     </section>
+                </div>
+            </div>
+
+            <!-- Export Page Overlay -->
+            <div id="exportPage" class="page-overlay" style="display: none;">
+                <div class="export-container">
+                    <div class="export-card">
+                        <div class="export-header">
+                            <h1>Export Your Data</h1>
+                            <p>Download all your captured memories in a beautifully formatted PDF</p>
+                        </div>
+
+                        <div class="export-info" id="exportInfo">
+                            <div class="info-box">
+                                <span class="value" id="totalItems">-</span>
+                                <span class="label">Total Memories</span>
+                            </div>
+                            <div class="info-box">
+                                <span class="value" id="totalEmotions">-</span>
+                                <span class="label">Emotions Tracked</span>
+                            </div>
+                            <div class="info-box">
+                                <span class="value" id="totalTags">-</span>
+                                <span class="label">Unique Tags</span>
+                            </div>
+                        </div>
+
+                        <div class="export-actions">
+                            <button class="btn-export" id="exportBtn">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                Download PDF Report
+                            </button>
+                        </div>
+
+                        <div class="status-message" id="exportStatusMessage"></div>
+
+                        <div class="export-features">
+                            <h3>What's included in your export:</h3>
+                            <ul>
+                                <li><i class="fa-solid fa-check-circle"></i> Complete summary of all your captured content</li>
+                                <li><i class="fa-solid fa-check-circle"></i> Emotion and sentiment analysis breakdown</li>
+                                <li><i class="fa-solid fa-check-circle"></i> Top tags and keywords</li>
+                                <li><i class="fa-solid fa-check-circle"></i> Content type statistics</li>
+                                <li><i class="fa-solid fa-check-circle"></i> Individual memory cards with summaries</li>
+                                <li><i class="fa-solid fa-check-circle"></i> Timestamps and metadata</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
