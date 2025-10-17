@@ -43,7 +43,7 @@
                 </a>
             </li>
             <li>
-                <a href="/">
+                <a href="#" id="suggestionsLink">
                     <i class="fa-solid fa-comment icon"></i>
                     <span class="label">Suggestions</span>
                 </a>
@@ -407,6 +407,29 @@
                                 <li><i class="fa-solid fa-check-circle"></i> Timestamps and metadata</li>
                             </ul>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions Page Overlay -->
+            <div id="suggestionsPage" class="page-overlay" style="display: none;">
+                <div class="suggestions-container">
+                    <div class="suggestions-chat-wrapper">
+                        <header class="chat-header">
+                            <h1>AI Assistant - Get Suggestions</h1>
+                            <p class="subtitle">Ask me anything about your memories, get recommendations, or chat about your experiences</p>
+                        </header>
+
+                        <main id="suggestionsChatWindow" class="chat-window">
+                            <div class="messages" id="suggestionsChatMessages" aria-live="polite"></div>
+                        </main>
+
+                        <form id="suggestionsChatForm" class="chat-form" autocomplete="off">
+                            <input id="suggestionsChatInput" type="text" placeholder="Ask for suggestions or insights about your memories..." aria-label="Message" />
+                            <button id="suggestionsChatSend" type="submit">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

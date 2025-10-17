@@ -199,9 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const analysisPage = document.getElementById('analysisPage');
   const tablesPage = document.getElementById('tablesPage');
   const exportPage = document.getElementById('exportPage');
+  const suggestionsPage = document.getElementById('suggestionsPage');
   const dashboardLink = document.getElementById('dashboardLink');
   const analysisLink = document.getElementById('analysisLink');
   const tablesLink = document.getElementById('tablesLink');
+  const suggestionsLink = document.getElementById('suggestionsLink');
   const footer = document.querySelector('.footer');
 
   function showDashboard() {
@@ -209,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'none';
     if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'block';
     
     // Update active state
@@ -224,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (analysisPage) analysisPage.style.display = 'block';
     if (tablesPage) tablesPage.style.display = 'none';
     if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -242,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'block';
     if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -273,6 +278,32 @@ document.addEventListener('DOMContentLoaded', () => {
     tablesLink.addEventListener('click', (e) => {
       e.preventDefault();
       showTables();
+    });
+  }
+
+  function showSuggestions() {
+    if (dashContent) dashContent.style.display = 'none';
+    if (analysisPage) analysisPage.style.display = 'none';
+    if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'block';
+    if (footer) footer.style.display = 'none';
+    
+    // Update active state
+    document.querySelectorAll('.side-menu a').forEach(a => a.classList.remove('active'));
+    if (suggestionsLink) suggestionsLink.classList.add('active');
+    
+    // Save state
+    localStorage.setItem('currentPage', 'suggestions');
+    
+    // Initialize suggestions chat
+    initializeSuggestionsChat();
+  }
+
+  if (suggestionsLink) {
+    suggestionsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSuggestions();
     });
   }
 
@@ -1436,6 +1467,8 @@ document.addEventListener('DOMContentLoaded', () => {
       showTables();
     } else if (savedPage === 'export') {
       showExport();
+    } else if (savedPage === 'suggestions') {
+      showSuggestions();
     } else {
       showDashboard();
     }
@@ -1682,6 +1715,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'none';
     if (exportPage) exportPage.style.display = 'block';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -1779,6 +1813,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
       }
     }
+  }
+
+  // --- Suggestions Chat Functions ---
+  const suggestionsChatForm = document.getElementById('suggestionsChatForm');
+  const suggestionsChatInput = document.getElementById('suggestionsChatInput');
+  const suggestionsChatMessages = document.getElementById('suggestionsChatMessages');
+
+  function appendSuggestionsChatMessage(text, cls) {
+    const div = document.createElement('div');
+    div.className = `msg ${cls}`;
+    div.textContent = text;
+    suggestionsChatMessages.appendChild(div);
+    suggestionsChatMessages.scrollTop = suggestionsChatMessages.scrollHeight;
+  }
+
+  function initializeSuggestionsChat() {
+    // Add welcome message if chat is empty
+    if (suggestionsChatMessages && suggestionsChatMessages.children.length === 0) {
+      appendSuggestionsChatMessage('👋 Hello! I\'m your AI assistant. I can help you with:\n\n• Finding patterns in your memories\n• Suggesting content based on your interests\n• Analyzing trends in your captured content\n• Answering questions about your past experiences\n• Recommending related topics to explore\n\nWhat would you like to know?', 'bot');
+    }
+    
+    // Focus on input
+    if (suggestionsChatInput) {
+      setTimeout(() => suggestionsChatInput.focus(), 100);
+    }
+  }
+
+  // Handle suggestions chat form submission
+  if (suggestionsChatForm) {
+    suggestionsChatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const text = suggestionsChatInput.value.trim();
+      if (!text) return;
+      
+      // Add user message
+      appendSuggestionsChatMessage(text, 'user');
+      suggestionsChatInput.value = '';
+      
+      // Add loading placeholder
+      appendSuggestionsChatMessage('💭 Thinking...', 'bot');
+      const placeholder = suggestionsChatMessages.querySelector('.msg.bot:last-child');
+      
+      try {
+        const response = await fetch(`${API_BASE}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network error');
+        }
+        
+        const data = await response.json();
+        placeholder.textContent = data.reply;
+      } catch (error) {
+        placeholder.textContent = '❌ Sorry, something went wrong. Please try again later.';
+        console.error('Suggestions chat error:', error);
+      }
+    });
   }
 
   // --- Chatbot Functions ---

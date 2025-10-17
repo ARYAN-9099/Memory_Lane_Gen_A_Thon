@@ -1201,6 +1201,10 @@ footer {
   margin-top: 0.5rem;
   animation: slideIn 0.3s ease-out;
   overflow-x: hidden;
+}
+
+#suggestionsPage {
+  overflow: hidden !important;
   overflow-y: auto;
 }
 
@@ -1771,8 +1775,10 @@ footer {
 /* ==================== Export Page Overlay Styles ==================== */
 .export-container {
   max-width: 800px;
-  margin: 2rem auto;
+  margin: 0rem auto;
   padding: 2rem;
+  position: relative;
+  bottom: 1rem;
 }
 
 .export-card {
@@ -1924,44 +1930,62 @@ footer {
 
 /* Dark theme support for export overlay */
 [data-theme="dark"] .export-card {
-  background: var(--card-color);
+  background: linear-gradient(145deg, #1a1d29 0%, #22252f 100%);
   color: var(--text-color);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .export-header h1 {
-  color: var(--text-color);
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 [data-theme="dark"] .export-header p {
-  color: var(--d-gray-color);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 [data-theme="dark"] .info-box {
-  background: var(--bg-color);
+  background: rgba(43, 108, 176, 0.1);
+  border: 1px solid rgba(43, 108, 176, 0.2);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 [data-theme="dark"] .info-box .value {
-  color: var(--accent);
+  color: #60a5fa;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
 }
 
 [data-theme="dark"] .info-box .label {
-  color: var(--d-gray-color);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 [data-theme="dark"] .export-features {
-  border-top-color: rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] .export-features h3 {
-  color: var(--text-color);
+  color: #ffffff;
 }
 
 [data-theme="dark"] .export-features li {
-  color: var(--d-gray-color);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 [data-theme="dark"] .export-features li i {
-  color: var(--accent);
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .btn-export {
+  background: linear-gradient(135deg, #2b6cb0 0%, #1e4d7b 100%);
+  box-shadow: 0 4px 15px rgba(43, 108, 176, 0.4);
+}
+
+[data-theme="dark"] .btn-export:hover {
+  background: linear-gradient(135deg, #3b7cc0 0%, #2e5d8b 100%);
+  box-shadow: 0 6px 20px rgba(43, 108, 176, 0.5);
 }
 /* ==================== End Export Page Overlay Styles ==================== */
 
@@ -2198,4 +2222,234 @@ footer {
   background: #2c5282;
 }
 /* ==================== End Chatbot Styles ==================== */
+
+/* ==================== Suggestions Page Overlay Styles ==================== */
+
+.suggestions-container {
+  width: 80%;
+  height: 37rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin: 0rem auto;
+  margin-top: 6rem;
+}
+
+#suggestionsPage {
+  position: relative;
+  bottom: 6rem;
+}
+
+.suggestions-chat-wrapper {
+  width: 100%;
+  max-width: 1400px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+}
+
+.suggestions-chat-wrapper .chat-header {
+  padding: 24px;
+  border-bottom: 1px solid #eef2f7;
+  background: linear-gradient(135deg, #2b6cb0 0%, #2c5282 100%);
+  color: white;
+}
+
+.suggestions-chat-wrapper .chat-header h1 {
+  margin: 0;
+  font-size: 22px;
+  color: white;
+}
+
+.suggestions-chat-wrapper .chat-header .subtitle {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+}
+
+.suggestions-chat-wrapper .chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%;
+}
+
+.suggestions-chat-wrapper .messages {
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 0;
+  height: 100%;
+}
+
+.suggestions-chat-wrapper .messages::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.suggestions-chat-wrapper .messages::-webkit-scrollbar-track {
+  display: none;
+}
+
+.suggestions-chat-wrapper .messages::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+.suggestions-chat-wrapper .msg {
+  max-width: 75%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  font-size: 15px;
+}
+
+.suggestions-chat-wrapper .msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #2b6cb0, #2c5282);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.3);
+}
+
+.suggestions-chat-wrapper .msg.bot {
+  align-self: flex-start;
+  background: white;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.suggestions-chat-wrapper .chat-form {
+  display: flex;
+  border-top: 1px solid #eef2f7;
+  padding: 20px;
+  background: white;
+  gap: 12px;
+}
+
+.suggestions-chat-wrapper .chat-form input {
+  flex: 1;
+  padding: 14px 18px;
+  border: 2px solid #e6eef7;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 15px;
+  transition: border-color 0.2s ease;
+}
+
+.suggestions-chat-wrapper .chat-form input:focus {
+  outline: none;
+  border-color: #2b6cb0;
+}
+
+.suggestions-chat-wrapper .chat-form button {
+  background: linear-gradient(135deg, #2b6cb0, #2c5282);
+  color: #fff;
+  border: 0;
+  padding: 14px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.3);
+}
+
+.suggestions-chat-wrapper .chat-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.4);
+}
+
+.suggestions-chat-wrapper .chat-form button:active {
+  transform: translateY(0);
+}
+
+/* Dark theme support for suggestions page */
+[data-theme="dark"] .suggestions-chat-wrapper {
+  background: linear-gradient(145deg, #1a1d29 0%, #22252f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-header h1 {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-header .subtitle {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .messages {
+  background: linear-gradient(180deg, #1a1d29 0%, #16191f 100%);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .msg.bot {
+  background: rgba(43, 108, 176, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .msg.user {
+  background: linear-gradient(135deg, #2b6cb0, #1e4d7b);
+  box-shadow: 0 2px 12px rgba(43, 108, 176, 0.4);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-form {
+  background: rgba(26, 29, 41, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-form input {
+  background: rgba(22, 25, 31, 0.8);
+  color: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-form input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-form button {
+  background: linear-gradient(135deg, #2b6cb0, #1e4d7b);
+  box-shadow: 0 4px 15px rgba(43, 108, 176, 0.4);
+}
+
+[data-theme="dark"] .suggestions-chat-wrapper .chat-form button:hover {
+  background: linear-gradient(135deg, #3b7cc0, #2e5d8b);
+  box-shadow: 0 6px 20px rgba(43, 108, 176, 0.5);
+}
+/* ==================== End Suggestions Page Overlay Styles ==================== */
 
