@@ -1781,6 +1781,93 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // --- Chatbot Functions ---
+  const chatbotToggle = document.getElementById('chatbotToggle');
+  const chatbotOverlay = document.getElementById('chatbotOverlay');
+  const closeChatbot = document.getElementById('closeChatbot');
+  const chatForm = document.getElementById('chatForm');
+  const chatInput = document.getElementById('chatInput');
+  const chatMessages = document.getElementById('chatMessages');
+
+  function appendChatMessage(text, cls) {
+    const div = document.createElement('div');
+    div.className = `msg ${cls}`;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function openChatbot() {
+    chatbotOverlay.style.display = 'flex';
+    
+    // Add initial greeting if messages is empty
+    if (chatMessages.children.length === 0) {
+      appendChatMessage('Hello! Ask me about all your previous memories and experiences.', 'bot');
+    }
+    
+    // Focus on input
+    setTimeout(() => chatInput.focus(), 100);
+  }
+
+  function closeChatbotModal() {
+    chatbotOverlay.style.display = 'none';
+  }
+
+  // Toggle chatbot
+  if (chatbotToggle) {
+    chatbotToggle.addEventListener('click', openChatbot);
+  }
+
+  // Close chatbot
+  if (closeChatbot) {
+    closeChatbot.addEventListener('click', closeChatbotModal);
+  }
+
+  // Close chatbot when clicking outside the modal
+  if (chatbotOverlay) {
+    chatbotOverlay.addEventListener('click', function(e) {
+      if (e.target === chatbotOverlay) {
+        closeChatbotModal();
+      }
+    });
+  }
+
+  // Handle chat form submission
+  if (chatForm) {
+    chatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const text = chatInput.value.trim();
+      if (!text) return;
+      
+      // Add user message
+      appendChatMessage(text, 'user');
+      chatInput.value = '';
+      
+      // Add loading placeholder
+      appendChatMessage('...', 'bot');
+      const placeholder = chatMessages.querySelector('.msg.bot:last-child');
+      
+      try {
+        const response = await fetch(`${API_BASE}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network error');
+        }
+        
+        const data = await response.json();
+        placeholder.textContent = data.reply;
+      } catch (error) {
+        placeholder.textContent = 'Sorry, something went wrong. Try again later.';
+        console.error('Chat error:', error);
+      }
+    });
+  }
+
   init();
   loadWebsiteAnalytics();
 });

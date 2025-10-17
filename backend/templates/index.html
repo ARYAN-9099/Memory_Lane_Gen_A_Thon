@@ -418,6 +418,35 @@
 
     </section>
 
+    <!-- Chatbot Floating Button -->
+    <button id="chatbotToggle" class="chatbot-toggle" title="Open Helper Chatbot">
+        <i class="fa-solid fa-comments"></i>
+    </button>
+
+    <!-- Chatbot Overlay -->
+    <div id="chatbotOverlay" class="chatbot-overlay" style="display: none;">
+        <div class="chatbot-modal">
+            <div class="chat-wrapper">
+                <header class="chat-header">
+                    <h1>Helper Chatbot</h1>
+                    <p class="subtitle">Ask about your past memories and experiences</p>
+                    <button id="closeChatbot" class="close-chatbot" title="Close">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </header>
+
+                <main id="chat" class="chat-window">
+                    <div class="messages" id="chatMessages" aria-live="polite"></div>
+                </main>
+
+                <form id="chatForm" class="chat-form" autocomplete="off">
+                    <input id="chatInput" type="text" placeholder="Type your question..." aria-label="Message" />
+                    <button id="chatSend" type="submit">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </body>
 
