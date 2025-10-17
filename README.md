@@ -173,10 +173,8 @@ python test_semantic_search.py
 
 ---
 
-## Authors
+## Team
 
 - Aryan Mane
 - Chataniya Dhanai
 - Shubham Kumar Das
-
-Project owner: [ARYAN-9099](https://github.com/ARYAN-9099)
