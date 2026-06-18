@@ -198,15 +198,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashContent = document.getElementById('dash-content');
   const analysisPage = document.getElementById('analysisPage');
   const tablesPage = document.getElementById('tablesPage');
+  const exportPage = document.getElementById('exportPage');
+  const suggestionsPage = document.getElementById('suggestionsPage');
   const dashboardLink = document.getElementById('dashboardLink');
   const analysisLink = document.getElementById('analysisLink');
   const tablesLink = document.getElementById('tablesLink');
+  const suggestionsLink = document.getElementById('suggestionsLink');
   const footer = document.querySelector('.footer');
 
   function showDashboard() {
     if (dashContent) dashContent.style.display = 'block';
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'block';
     
     // Update active state
@@ -221,6 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dashContent) dashContent.style.display = 'none';
     if (analysisPage) analysisPage.style.display = 'block';
     if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -238,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dashContent) dashContent.style.display = 'none';
     if (analysisPage) analysisPage.style.display = 'none';
     if (tablesPage) tablesPage.style.display = 'block';
+    if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
     if (footer) footer.style.display = 'none';
     
     // Update active state
@@ -269,6 +278,32 @@ document.addEventListener('DOMContentLoaded', () => {
     tablesLink.addEventListener('click', (e) => {
       e.preventDefault();
       showTables();
+    });
+  }
+
+  function showSuggestions() {
+    if (dashContent) dashContent.style.display = 'none';
+    if (analysisPage) analysisPage.style.display = 'none';
+    if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'none';
+    if (suggestionsPage) suggestionsPage.style.display = 'block';
+    if (footer) footer.style.display = 'none';
+    
+    // Update active state
+    document.querySelectorAll('.side-menu a').forEach(a => a.classList.remove('active'));
+    if (suggestionsLink) suggestionsLink.classList.add('active');
+    
+    // Save state
+    localStorage.setItem('currentPage', 'suggestions');
+    
+    // Initialize suggestions chat
+    initializeSuggestionsChat();
+  }
+
+  if (suggestionsLink) {
+    suggestionsLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSuggestions();
     });
   }
 
@@ -1430,6 +1465,10 @@ document.addEventListener('DOMContentLoaded', () => {
       showAnalysis();
     } else if (savedPage === 'tables') {
       showTables();
+    } else if (savedPage === 'export') {
+      showExport();
+    } else if (savedPage === 'suggestions') {
+      showSuggestions();
     } else {
       showDashboard();
     }
@@ -1667,6 +1706,263 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // --- Export Page Functions ---
+  const exportLink = document.getElementById('exportLink');
+  const exportBtn = document.getElementById('exportBtn');
+
+  function showExport() {
+    if (dashContent) dashContent.style.display = 'none';
+    if (analysisPage) analysisPage.style.display = 'none';
+    if (tablesPage) tablesPage.style.display = 'none';
+    if (exportPage) exportPage.style.display = 'block';
+    if (suggestionsPage) suggestionsPage.style.display = 'none';
+    if (footer) footer.style.display = 'none';
+    
+    // Update active state
+    document.querySelectorAll('.side-menu a').forEach(a => a.classList.remove('active'));
+    if (exportLink) exportLink.classList.add('active');
+    
+    // Save state
+    localStorage.setItem('currentPage', 'export');
+    
+    // Load export insights
+    loadExportInsights();
+  }
+
+  if (exportLink) {
+    exportLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showExport();
+    });
+  }
+
+  // Load insights for export page
+  async function loadExportInsights() {
+    try {
+      const response = await fetch(`${API_BASE}/insights`);
+      if (!response.ok) {
+        throw new Error('Failed to load insights');
+      }
+      const data = await response.json();
+      
+      const totalItemsEl = document.getElementById('totalItems');
+      const totalEmotionsEl = document.getElementById('totalEmotions');
+      const totalTagsEl = document.getElementById('totalTags');
+      
+      if (totalItemsEl) totalItemsEl.textContent = data.totalItems || 0;
+      if (totalEmotionsEl) totalEmotionsEl.textContent = Object.keys(data.byEmotion || {}).length;
+      if (totalTagsEl) totalTagsEl.textContent = (data.topTags || []).length;
+    } catch (error) {
+      console.error('Error loading insights:', error);
+      showExportStatus('Unable to load statistics', 'error');
+    }
+  }
+
+  // Handle export button click
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async function() {
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+      
+      showExportStatus('Generating your PDF export... This may take a moment.', 'loading');
+
+      try {
+        const response = await fetch(`${API_BASE}/export/pdf`);
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate PDF');
+        }
+
+        // Create a blob from the response
+        const blob = await response.blob();
+        
+        // Create a download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `memory_lane_export_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showExportStatus('PDF downloaded successfully!', 'success');
+      } catch (error) {
+        console.error('Export error:', error);
+        showExportStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download PDF Report';
+      }
+    });
+  }
+
+  function showExportStatus(message, type) {
+    const statusEl = document.getElementById('exportStatusMessage');
+    if (statusEl) {
+      statusEl.className = `status-message ${type}`;
+      statusEl.textContent = message;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          statusEl.className = 'status-message';
+        }, 5000);
+      }
+    }
+  }
+
+  // --- Suggestions Chat Functions ---
+  const suggestionsChatForm = document.getElementById('suggestionsChatForm');
+  const suggestionsChatInput = document.getElementById('suggestionsChatInput');
+  const suggestionsChatMessages = document.getElementById('suggestionsChatMessages');
+
+  function appendSuggestionsChatMessage(text, cls) {
+    const div = document.createElement('div');
+    div.className = `msg ${cls}`;
+    div.textContent = text;
+    suggestionsChatMessages.appendChild(div);
+    suggestionsChatMessages.scrollTop = suggestionsChatMessages.scrollHeight;
+  }
+
+  function initializeSuggestionsChat() {
+    // Add welcome message if chat is empty
+    if (suggestionsChatMessages && suggestionsChatMessages.children.length === 0) {
+      appendSuggestionsChatMessage('👋 Hello! I\'m your AI assistant. I can help you with:\n\n• Finding patterns in your memories\n• Suggesting content based on your interests\n• Analyzing trends in your captured content\n• Answering questions about your past experiences\n• Recommending related topics to explore\n\nWhat would you like to know?', 'bot');
+    }
+    
+    // Focus on input
+    if (suggestionsChatInput) {
+      setTimeout(() => suggestionsChatInput.focus(), 100);
+    }
+  }
+
+  // Handle suggestions chat form submission
+  if (suggestionsChatForm) {
+    suggestionsChatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const text = suggestionsChatInput.value.trim();
+      if (!text) return;
+      
+      // Add user message
+      appendSuggestionsChatMessage(text, 'user');
+      suggestionsChatInput.value = '';
+      
+      // Add loading placeholder
+      appendSuggestionsChatMessage('💭 Thinking...', 'bot');
+      const placeholder = suggestionsChatMessages.querySelector('.msg.bot:last-child');
+      
+      try {
+        const response = await fetch(`${API_BASE}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network error');
+        }
+        
+        const data = await response.json();
+        placeholder.textContent = data.reply;
+      } catch (error) {
+        placeholder.textContent = '❌ Sorry, something went wrong. Please try again later.';
+        console.error('Suggestions chat error:', error);
+      }
+    });
+  }
+
+  // --- Chatbot Functions ---
+  const chatbotToggle = document.getElementById('chatbotToggle');
+  const chatbotOverlay = document.getElementById('chatbotOverlay');
+  const closeChatbot = document.getElementById('closeChatbot');
+  const chatForm = document.getElementById('chatForm');
+  const chatInput = document.getElementById('chatInput');
+  const chatMessages = document.getElementById('chatMessages');
+
+  function appendChatMessage(text, cls) {
+    const div = document.createElement('div');
+    div.className = `msg ${cls}`;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function openChatbot() {
+    chatbotOverlay.style.display = 'flex';
+    
+    // Add initial greeting if messages is empty
+    if (chatMessages.children.length === 0) {
+      appendChatMessage('Hello! Ask me about all your previous memories and experiences.', 'bot');
+    }
+    
+    // Focus on input
+    setTimeout(() => chatInput.focus(), 100);
+  }
+
+  function closeChatbotModal() {
+    chatbotOverlay.style.display = 'none';
+  }
+
+  // Toggle chatbot
+  if (chatbotToggle) {
+    chatbotToggle.addEventListener('click', openChatbot);
+  }
+
+  // Close chatbot
+  if (closeChatbot) {
+    closeChatbot.addEventListener('click', closeChatbotModal);
+  }
+
+  // Close chatbot when clicking outside the modal
+  if (chatbotOverlay) {
+    chatbotOverlay.addEventListener('click', function(e) {
+      if (e.target === chatbotOverlay) {
+        closeChatbotModal();
+      }
+    });
+  }
+
+  // Handle chat form submission
+  if (chatForm) {
+    chatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const text = chatInput.value.trim();
+      if (!text) return;
+      
+      // Add user message
+      appendChatMessage(text, 'user');
+      chatInput.value = '';
+      
+      // Add loading placeholder
+      appendChatMessage('...', 'bot');
+      const placeholder = chatMessages.querySelector('.msg.bot:last-child');
+      
+      try {
+        const response = await fetch(`${API_BASE}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Network error');
+        }
+        
+        const data = await response.json();
+        placeholder.textContent = data.reply;
+      } catch (error) {
+        placeholder.textContent = 'Sorry, something went wrong. Try again later.';
+        console.error('Chat error:', error);
+      }
+    });
+  }
+
   init();
   loadWebsiteAnalytics();
 });
