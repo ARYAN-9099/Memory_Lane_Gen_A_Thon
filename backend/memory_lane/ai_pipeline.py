@@ -35,7 +35,7 @@ if gemini_api_key:
             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
         ]
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-3.1-flash-lite-preview",
             generation_config=generation_config,
             safety_settings=safety_settings,
         )
