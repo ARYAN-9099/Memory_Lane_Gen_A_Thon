@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from collections import Counter
 from contextlib import contextmanager
@@ -359,25 +360,25 @@ class Database:
                     # Build condition for semantic tags
                     tag_conditions = " OR ".join(["LOWER(t.tag) = ?" for _ in similar_tags])
                     sql_parts.append(
-                        f"AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ? OR ({tag_conditions}))"
+                        f"AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(i.source) LIKE ? OR LOWER(i.url) LIKE ? OR LOWER(i.content) LIKE ? OR LOWER(t.tag) LIKE ? OR ({tag_conditions}))"
                     )
                     like_query = f"%{query_lower}%"
-                    params.extend([like_query, like_query, like_query])
+                    params.extend([like_query, like_query, like_query, like_query, like_query, like_query])
                     params.extend(list(similar_tags))
                 else:
                     # Fallback to regular search if no similar tags found
                     sql_parts.append(
-                        "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ?)"
+                        "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(i.source) LIKE ? OR LOWER(i.url) LIKE ? OR LOWER(i.content) LIKE ? OR LOWER(t.tag) LIKE ?)"
                     )
                     like_query = f"%{query_lower}%"
-                    params.extend([like_query, like_query, like_query])
+                    params.extend([like_query, like_query, like_query, like_query, like_query, like_query])
             else:
                 # Regular search without semantic matching (faster)
                 sql_parts.append(
-                    "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(t.tag) LIKE ?)"
+                    "AND (LOWER(i.title) LIKE ? OR LOWER(i.summary) LIKE ? OR LOWER(i.source) LIKE ? OR LOWER(i.url) LIKE ? OR LOWER(i.content) LIKE ? OR LOWER(t.tag) LIKE ?)"
                 )
                 like_query = f"%{query_lower}%"
-                params.extend([like_query, like_query, like_query])
+                params.extend([like_query, like_query, like_query, like_query, like_query, like_query])
 
         if emotion:
             emotion_lower = emotion.lower()
@@ -500,3 +501,84 @@ class Database:
         except Exception as e:
             print(f"Error fetching summaries from DB: {e}")
             return []
+
+    def _score_chat_item(self, item: Item, query: str | None) -> float:
+        score = 0.0
+        age_hours = max((datetime.now() - item.created_at).total_seconds() / 3600.0, 0.0)
+        score += 3.0 / (1.0 + age_hours / 24.0)
+
+        if not query:
+            return score
+
+        query_lower = query.lower()
+        tokens = [token for token in re.findall(r"[a-z0-9][a-z0-9.-]+", query_lower) if len(token) > 2]
+        keywords = {keyword.lower() for keyword in item.keywords or []}
+        fields = {
+            "title": (item.title or "").lower(),
+            "source": (item.source or "").lower(),
+            "url": (item.url or "").lower(),
+            "summary": (item.summary or "").lower(),
+            "content": (item.content or "").lower(),
+        }
+        site_intent = any(word in query_lower for word in ("when", "visit", "visited", "site", "website", "url", "link", "where", "time"))
+
+        for token in tokens:
+            if token in fields["title"]:
+                score += 5.0
+            if token in fields["source"]:
+                score += 6.0
+            if token in fields["url"]:
+                score += 6.0
+            if token in fields["summary"]:
+                score += 2.0
+            if token in fields["content"]:
+                score += 1.0
+            if token in keywords:
+                score += 4.0
+
+        if item.emotion and item.emotion.lower() in query_lower:
+            score += 2.5
+
+        if site_intent and item.url:
+            score += 3.0
+        if site_intent and item.source:
+            score += 2.0
+
+        return score
+
+    def fetch_chat_context_items(
+        self,
+        user_id: int,
+        query: str | None = None,
+        limit: int = 8,
+        use_semantic: bool = True,
+    ) -> list[Item]:
+        """Return a ranked slice of items for chat context."""
+        ranked: dict[int, tuple[float, Item]] = {}
+
+        recent_items = self.list_recent(user_id=user_id, limit=max(limit * 2, 10))
+        for item in recent_items:
+            ranked[item.id] = (self._score_chat_item(item, query), item)
+
+        if query:
+            try:
+                search_hits, _ = self.search_items(
+                    user_id=user_id,
+                    query=query,
+                    limit=max(limit * 3, 12),
+                    use_semantic=use_semantic,
+                )
+                for item in search_hits:
+                    score = self._score_chat_item(item, query) + 5.0
+                    existing = ranked.get(item.id)
+                    if not existing or score > existing[0]:
+                        ranked[item.id] = (score, item)
+            except Exception as e:
+                print(f"Error fetching chat context items: {e}")
+
+        ordered = sorted(
+            ranked.values(),
+            key=lambda pair: (pair[0], pair[1].created_at),
+            reverse=True,
+        )
+        return [item for _, item in ordered[:limit]]
